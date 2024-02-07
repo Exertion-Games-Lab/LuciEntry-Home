@@ -35,11 +35,13 @@
     10. POST /command/:deviceId/:commandName
 
   3. [Onboarding](#onboarding)
+
     1. [Instructions](#instructions)
 
     2. [Commands](#commands)
 
 3. [New Pi Setup Procedure](#new-pi-setup-procedure)
+
   1. [Setting up your new Raspberry Pi](#setting-up-your-new-raspberry-pi)
 
   2. [Downloading Dependencies](#installing-dependencies)
