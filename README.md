@@ -237,4 +237,8 @@ With your new Raspberry Pi, you need to install Raspbian OS onto the SD card for
 
 
 
+## Installing Arduino IDE and relevant libraries
+
+
+
 ## Cloning Server Codes
