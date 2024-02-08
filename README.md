@@ -4,47 +4,7 @@
 
 2. [System Architecture](#system-architecture)
 
-  1. [Server Model](#server-model)
-
-    1. [Instruction](#instruction)
-
-    2. [Command](#command)
-
-    3. [Device](#device)
-
-  2. [Endpoints](#endpoints)
-
-    1. GET /
-       
-    2. GET /blockCommands
-       
-    3. GET /devices
-       
-    4. GET /device/:deviceId
-       
-    5. GET /commands/:deviceId
-       
-    6. GET /command/:deviceId
-       
-    7. POST /blockCommands
-       
-    8. POST /unblockCommands
-       
-    9. POST /device/:deviceId
-       
-    10. POST /command/:deviceId/:commandName
-
-  3. [Onboarding](#onboarding)
-    1. [Instructions](#instructions)
-
-    2. [Commands](#commands)
-
 3. [New Pi Setup Procedure](#new-pi-setup-procedure)
-  1. [Setting up your new Raspberry Pi](#setting-up-your-new-raspberry-pi)
-
-  2. [Downloading Dependencies](#installing-dependencies)
-
-  3. [Cloning Server Codes](#cloning-server-codes)
 
 # Overview
 This README markdown file contains the system architecture for the server that controls the LuciEntry HOME prototype, developed by Exertion Games Lab for Lucid Dreaming research.
@@ -274,6 +234,10 @@ With your new Raspberry Pi, you need to install Raspbian OS onto the SD card for
 
 
 ## Installing Dependencies
+
+
+
+## Installing Arduino IDE and relevant libraries
 
 
 

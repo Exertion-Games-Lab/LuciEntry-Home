@@ -20,6 +20,7 @@ bool emergencyState = false;
 bool connected = false;
 int ID = 5; 
 #define ChangeGVSDirectionInterval 500
+#define GVSHZ 40
 
 // WIFI Details
 const char* SSID = "ORBI80";
@@ -104,6 +105,7 @@ void loop() {
       digitalWrite(Relay, LOW);
       Command command = fetchNextCommand();
       executeCommand(command);
+      delay(2000);
     } else {
       digitalWrite(LEDEmergency, HIGH);
       digitalWrite(Relay, HIGH);
@@ -203,11 +205,11 @@ void executeCommand(Command command){
 
 void executeInstruction(Instruction instruction){
     switch (instruction.code){
-        case TurnOnLED:
-            Turn(true);
+        case StartTACS:
+            Turn(true, instruction.payload["intensity"]);
             break;
         case TurnOffLED:
-            Turn(false);
+            Turn(false, 0);
             break;
         case Wait:
             ChangeGVSDirection(instruction.payload["millis"]);
@@ -227,31 +229,31 @@ void wait(int time){
 void ChangeGVSDirection(int time)
 {
   int cnt=0;
+  int delayInterval = 1000/GVSHZ/2;  
   while(cnt<time)
   {
     
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
     Serial.println("CW");
-    delay(ChangeGVSDirectionInterval);
-    cnt+=ChangeGVSDirectionInterval;
-    //ReadInput();
+    delay(delayInterval);
+    cnt+=delayInterval;
     
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
     Serial.println("CCW");
-    delay(ChangeGVSDirectionInterval);
-    cnt+=ChangeGVSDirectionInterval;
+    delay(delayInterval);
+    cnt+=delayInterval;
   }
   
 }
 
-void Turn(bool active)
+void Turn(bool active, int intensity)
 {
   if(active)
   {
-    analogWrite(PWMControl, 255);
-    Serial.println("Turn on");
+    analogWrite(PWMControl, intensity);
+    Serial.println("Turn on, Intensity = " + String(intensity));
   }
   else
   {
