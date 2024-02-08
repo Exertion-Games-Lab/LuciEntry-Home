@@ -32,14 +32,33 @@ def send_LDI_commands():
     }
     requests.post(f"{base_url}/command/1/VisualStimulus", json=lightPayload)
 
+    tacsPayload = {
+        'millis': 10000,
+        'intensity': 100,
+    }
+    requests.post(f"{base_url}/command/4/GVS_Stimulus", json=tacsPayload)
+
 def send_Diving_commands():
     print("sending Diving commands")
-    requests.post(f"{base_url}/command/1/BlueVisualStimulus", {})
-    # requests.post(f"{base_url}/command/2/BubbleAudioStimulus", {})
-    requests.post(f"{base_url}/command/2/WaterAudioStimulus", {})
-    requests.post(f"{base_url}/command/3/AirPumpStimulus", {})
-    requests.post(f"{base_url}/command/4/GVSStimulus", {})
+    soundPayload = {
+        'filename': "water.mp3",
+        'volume': 30,
+        'duration': 10000
+    }
+    requests.post(f"{base_url}/command/2/Audio", json=soundPayload)
 
+    
+    lightPayload = {
+        'brightness': 30,
+        'colour': {
+            'r': 0,
+            'g': 0,
+            'b': 255
+        }
+    }
+    requests.post(f"{base_url}/command/1/VisualStimulus", json=lightPayload)
+    requests.post(f"{base_url}/command/3/AirPump", {})
+    requests.post(f"{base_url}/command/4/GVS_Stimulus", {})
 def repeat_send_commands(commandParameters,command,interval):
     #interval = 10
     cnt = interval
@@ -66,7 +85,7 @@ def interactive_mode():
         isInterrupt = False
         if mode =='1':
                 print("start LDI")
-                thread = threading.Thread(target = repeat_send_commands,args=(commandParameters,send_LDI_commands,30))
+                thread = threading.Thread(target = repeat_send_commands,args=(commandParameters,send_LDI_commands,20))
                 thread.daemon = True
                 thread.start()
         elif mode =='2':
@@ -112,28 +131,32 @@ def timer_mode():
 def detector_mode():
     commandParameters = Parameter()
     commandParameters.isInterrupt = False
-
+    commandParameters.induction = False
     #REM detection
     commandParameters.sleep_stage = 'Awake'
     isInterrupt = False
-    thread = threading.Thread(target = detector.detection,args=(commandParameters, False))
+    thread = threading.Thread(target = Detector.detection,args=(commandParameters, True)) #isSynthetic = bool
     thread.daemon = True
     thread.start()
-    cnt = 0
-    while cnt<=60:
+
+    while commandParameters.sleep_stage != "REM_PEROID":
         time.sleep(1)
-        #print(commandParameters.sleep_stage)
-        if commandParameters.sleep_stage == "REM":
-            cnt+=1
+
+    # cnt = 0
+    # while cnt<=60:
+    #     time.sleep(1)
+    #     #print(commandParameters.sleep_stage)
+    #     if commandParameters.sleep_stage == "REM":
+    #         cnt+=1
     print("TIME FOR Induction!")
     commandParameters.isInterrupt = True
     time.sleep(2)
     commandParameters.isInterrupt = False
-
+    commandParameters.induction = True
 
     #induction stimuli
     print("start induction")
-    thread = threading.Thread(target = repeat_send_commands,args=(commandParameters,send_LDI_commands,30))
+    thread = threading.Thread(target = repeat_send_commands,args=(commandParameters,send_LDI_commands,20))
     thread.daemon = True
     thread.start()
 
