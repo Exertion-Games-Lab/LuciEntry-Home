@@ -19,7 +19,7 @@ def send_LDI_commands():
         'volume': 30,
         'duration': 10000
     }
-    requests.post(f"{base_url}/command/2/Audio", json=soundPayload)
+    requests.post(f"{base_url}/command/3/Audio", json=soundPayload)
 
     
     lightPayload = {
@@ -30,13 +30,13 @@ def send_LDI_commands():
             'b': 0
         }
     }
-    requests.post(f"{base_url}/command/1/VisualStimulus", json=lightPayload)
+    requests.post(f"{base_url}/command/2/VisualStimulus", json=lightPayload)
 
     tacsPayload = {
         'millis': 10000,
         'intensity': 100,
     }
-    requests.post(f"{base_url}/command/4/GVS_Stimulus", json=tacsPayload)
+    requests.post(f"{base_url}/command/5/GVS_Stimulus", json=tacsPayload)
 
 def send_Diving_commands():
     print("sending Diving commands")
@@ -45,7 +45,7 @@ def send_Diving_commands():
         'volume': 30,
         'duration': 10000
     }
-    requests.post(f"{base_url}/command/2/Audio", json=soundPayload)
+    requests.post(f"{base_url}/command/3/Audio", json=soundPayload)
 
     
     lightPayload = {
@@ -56,9 +56,9 @@ def send_Diving_commands():
             'b': 255
         }
     }
-    requests.post(f"{base_url}/command/1/VisualStimulus", json=lightPayload)
-    requests.post(f"{base_url}/command/3/AirPump", {})
-    requests.post(f"{base_url}/command/4/GVS_Stimulus", {})
+    requests.post(f"{base_url}/command/2/VisualStimulus", json=lightPayload)
+    requests.post(f"{base_url}/command/4/AirPump", {})
+    requests.post(f"{base_url}/command/5/GVS_Stimulus", {})
 def repeat_send_commands(commandParameters,command,interval):
     #interval = 10
     cnt = interval
