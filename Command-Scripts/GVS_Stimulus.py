@@ -13,8 +13,8 @@ if __name__ == "__main__":
         intensity = int(sys.argv[2])
 
     payload = {
-        'millis': millis
-        'intensity' = intensity
+        'millis': millis;
+        'intensity': intensity
     }
 
     requests.post(f"{base_url}/command/5/GVS_Stimulus", json=payload)
