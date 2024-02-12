@@ -135,7 +135,7 @@ def detector_mode():
     #REM detection
     commandParameters.sleep_stage = 'Awake'
     isInterrupt = False
-    thread = threading.Thread(target = Detector.detection,args=(commandParameters, True)) #isSynthetic = bool
+    thread = threading.Thread(target = Detector.detection,args=(commandParameters, "OPEN_BCI")) #Board_Name
     thread.daemon = True
     thread.start()
 
