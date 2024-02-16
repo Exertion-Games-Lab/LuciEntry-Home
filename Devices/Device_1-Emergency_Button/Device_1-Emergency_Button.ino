@@ -1,13 +1,11 @@
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <ezButton.h>
 
 // ---------- DEVICE 1 ---------- //
 
 // ESP8266 Pins used
-ezButton button(5);
+const int button = 5;
 const int LEDPower = 4;
 const int LEDWiFi = 0;
 const int LEDEmergency = 2;
@@ -17,6 +15,7 @@ int count = 0;
 bool emergencyState = false;
 bool connected = false;
 int ID = 1; 
+int temp;
 
 //WiFi Details
 const char* SSID = "ORBI80";
@@ -29,8 +28,8 @@ void setup() {
   // Serial Monitor Startup
   Serial.begin(9600);
 
-  // Setting Button Debounce Time to 50ms
-  button.setDebounceTime(50);
+  // Setting button as input
+  pinMode(button, INPUT);
 
   // Setting Indicators LED pins to OUTPUT
   pinMode(LEDPower, OUTPUT);
@@ -40,7 +39,7 @@ void setup() {
   // Turn on Power indicator LED to indicate power on
   digitalWrite(LEDPower, HIGH);
 
-  // Set WiFi to Station Mode
+  // Set WiFi to Station Mode##
   WiFi.mode(WIFI_STA);
 
 }
@@ -57,36 +56,36 @@ void loop() {
     connect();
   }
 
-  // button loop function to detech button press
-  button.loop();
-  
-  // increase count by 1 when button is pressed
-  if(button.isPressed()){
-    Serial.println("The button is pressed");
-    count++;
+  // get button state
+  temp = digitalRead(button);
 
-  }
-  
   // get Server's emergency State
   emergencyState = fetchEmergencyState();
 
-  // when button is pressed once, emergency state is declared, 
-  // button pressed a second time to disabled emergency state
-  if (count == 1 && emergencyState == false){
+  if (temp == LOW && emergencyState == false){
+    Serial.println("System Active");
+    digitalWrite(LEDEmergency, LOW);
+    delay(100);
+  }
+  else if(temp == HIGH && emergencyState == false){
     emergencyState = true;
     sendEmergencyStateUpdate(true);
     post(URL + "blockCommands", IP_ADDRESS, PORT);
-    Serial.println("Emergeny Stop!");
+    Serial.println("System Inactive");
     digitalWrite(LEDEmergency, HIGH);
     delay(100);
-
-  } else if (count == 2){
+  }
+  else if (temp == LOW && emergencyState == true){
     emergencyState = false;
     sendEmergencyStateUpdate(false);
     post(URL + "unblockCommands", IP_ADDRESS, PORT);
-    Serial.println("Emergency Stop Ended.");
+    Serial.println("System Active");
     digitalWrite(LEDEmergency, LOW);
-    count = 0;
+    delay(100);
+  }
+  else if (temp == HIGH && emergencyState == true){
+    Serial.println("System Inactive");
+    digitalWrite(LEDEmergency, HIGH);
     delay(100);
   }
 
