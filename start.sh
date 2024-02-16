@@ -6,14 +6,14 @@ find_folder_path() {
     STARTING_PATH="/home/"
 
     # Find the path to LDI-System-main
-    SYSTEM_PATH=$(find "$STARTING_PATH" -type d -name "LuciEntry-HOME" 2>/dev/null | head -n 1)
+    SYSTEM_PATH=$(find "$STARTING_PATH" -type d -name "LuciEntry-Home" 2>/dev/null | head -n 1)
 
     # If LDI-System-main is found, find the API folder within it
     if [ -n "$SYSTEM_PATH" ]; then
         API_FOLDER=$(find "$SYSTEM_PATH" -type d -name "API" 2>/dev/null | head -n 1)
         SPEAKERS_DEVICES_FOLDER=$(find / -type d -name "Device_3-Speakers" 2>/dev/null | head -n 1)
     else
-        echo "LuciEntry-HOME folder not found."
+        echo "LuciEntry-Home folder not found."
         exit 1
     fi
 }
