@@ -124,7 +124,7 @@ def main():
     root_path = "/home/"
     target_folder = "LuciEntry-Home"
     main_folder_path = find_folder(root_path, target_folder)
-    target_files_py = ["AirPump.py","AudioStimulus.py","BlockCommands.py","CommandSender.py","GVS_Stimulus.py","TACS_Stimulus.py","UnblockCommands.py","VisualStimulus.py","Device_3-Speakers.py","BatchCommands.py"]
+    target_files_py = ["AirPump.py","AudioStimulus.py","BlockCommands.py","CommandSender.py","GVS_Stimulus.py","TACS_Stimulus.py","UnblockCommands.py","VisualStimulus.py","Device_3-Speakers.py"]
     target_files_ino = ["Device_1-Emergency_Button.ino","Device_2-LED.ino","Device_3-Speakers.ino","Device_4-Bubble_Motor.ino","Device_5-GVS.ino","Device_6-TACS.ino"]
 
     py_file_paths = []
