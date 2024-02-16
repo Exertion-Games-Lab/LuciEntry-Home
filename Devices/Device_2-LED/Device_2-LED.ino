@@ -24,9 +24,9 @@ int ID = 2;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // WIFI Details
-const char* SSID = "ORBI80";
-const char* PASSWORD = "classychair864";
-const String IP_ADDRESS = "192.168.1.26";
+const char* SSID = "HUAWEI Nat 10 Pro";
+const char* PASSWORD = "O6Z12D38";
+const String IP_ADDRESS = "192.168.43.196";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 // enums 

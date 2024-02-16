@@ -10,7 +10,7 @@ find_folder_path() {
 
     # If LDI-System-main is found, find the API folder within it
     if [ -n "$SYSTEM_PATH" ]; then
-        API_FOLDER=$(find "$SYSTEM_PATH" -type d -name "API" 2>/dev/null | head -n 1)
+        API_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Server" 2>/dev/null | head -n 1)
         SPEAKERS_DEVICES_FOLDER=$(find / -type d -name "Device_3-Speakers" 2>/dev/null | head -n 1)
     else
         echo "LuciEntry-Home folder not found."
