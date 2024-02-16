@@ -22,12 +22,14 @@ find_folder_path() {
 # Function to start the server
 start_server() {
     lxterminal --title="Server" --working-directory="$SERVER_FOLDER" -e "bash -c 'npm start && read -p \"Press ENTER to exit\"'"
+}
 
 # Function to run Python script in another terminal
 run_python_script() {
     sleep 15
     lxterminal --title="Speaker" --working-directory="$SPEAKERS_DEVICES_FOLDER" -e "bash -c 'python Device_3-Speakers.py && read -p \"Press ENTER to exit\"'"
     lxterminal --title="Command Sender" --working-directory="$COMMAND_SCRIPTS_FOLDER" -e "bash -c 'python CommandSender.py && read -p \"Press ENTER to exit\"'"
+}
 
 # Add more functions if needed
 
