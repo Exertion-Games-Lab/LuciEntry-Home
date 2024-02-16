@@ -13,7 +13,7 @@ if __name__ == "__main__":
         intensity = int(sys.argv[2])
 
     payload = {
-        'millis': millis
+        'millis': millis,
         'intensity': intensity
     }
 

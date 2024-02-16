@@ -1,244 +1,302 @@
 # Table of Contents
 
-1. [Overview](#overview)
+1. [System Structure](#system-structure)
 
 2. [System Architecture](#system-architecture)
 
 3. [New Pi Setup Procedure](#new-pi-setup-procedure)
 
-# Overview
-This README markdown file contains the system architecture for the server that controls the LuciEntry HOME prototype, developed by Exertion Games Lab for Lucid Dreaming research.
+4. [User Guide](#user-guide)
 
-# System Architecture
+This README markdown file contains the system structure as well as the first time setup and user guides for the server that controls the LuciEntry prototype, developed by Exertion Games Lab for Lucid Dreaming research. In this document, the system file structure is outlined, and the process of setting up a new raspberry Pi with the server codes.
+# System Structure
+The Server file consist of a main folder named LuciEntry.
 
-## Server Model
+## Folder: LuciEntry
+This is the main folder which contains the sub-folders "Server", "Command-Scripts" and "Devices". It also contains the "start.sh" shell file, "configure_wifi.py" python program, the "wifi_info.json" JSON file, and this README.md markdown file.
 
-### Instruction
+### Shell File: start.sh
+This shell script is designed to automate the setup and execution of a server and a Python script in separate terminal windows on a Raspberry Pi. Below are the key functionalities of the script:
 
-An Instruction is a base class representing a singular action or operation that a device should perform. It is abstract and should be extended to create new, specific instructions for commands. It has a `code` representing the type of the instruction and a `payload` containing the data needed for the instruction execution.
+#### Find Folder Path Function:
+  - Searches for the LuciEntry folder in the /home/ directory.
+  - If found, locates the Server folder within LuciEntry.
+  - Searches for the Device_3-Speakers folder in the root directory.
 
-To create a new Instruction, extend the Instruction class and define the specific behaviour and properties you require. Here’s a basic outline:
+#### Start Server Function:
+  - Opens a new terminal window using lxterminal.
+  - Sets the working directory to the Server folder.
+  - Executes npm start command to start the server.
+  - Waits for user input (Press ENTER to exit).
 
-```ts
-interface NewPayloadType {
-    // data
-}
+#### Run Python Script Function:
+  - Waits for a specified duration (15 seconds) to ensure the server is started.
+  - Opens a new terminal window using lxterminal.
+  - Sets the working directory to the Device_3-Speakers folder.
+  - Executes python Device_3-Speakers.py command to run the Python script.
+  - Waits for user input (Press ENTER to exit).
 
-class NewInstruction extends Instruction<NewPayloadType> {
-    constructor(payload: NewPayloadType) {
-        super(InstructionCode.NewInstructionCode, payload);
-    }
-}
-```
+#### Main Script Execution:
+  - Calls the find_folder_path function to locate required folders.
+  - Starts the server using start_server function.
+  - Runs the Python script using run_python_script function.
+  - Prompts the user to press ENTER to exit the script.
 
-`InstructionCode` is an enumeration defining the different possible instruction types. When creating a new instruction, you should add a new code to this enumeration to represent your new instruction type.
+This script enables the seamless setup and execution of a server and a Python script for Lucid Dreaming Prototype on a Raspberry Pi.
 
-### Command
+### Python File: confgure_wifi.py
+This Python script is designed to update Wi-Fi configuration details in various files used for the Lucid Dreaming Prototype project. Below are the key functionalities of the script:
 
-A Command is an abstract class representing a grouped set of Instructions. It allows a batch of Instructions to be sent together to a device. Each Command has a unique `id`, a `name` representing the type of command, an array of `instructions`, and the number of instructions `noOfInstructions`.
+#### Retrieve Wi-Fi Information Functions:
+Utilizes subprocesses to obtain the current Wi-Fi SSID and IP address of the Raspberry Pi.
 
-If a payload is provided when adding a command, it will be passed to the command, necessitating every command to implement a `setPayload` method to handle the incoming payload.
+#### Folder and File Search Functions:
+Searches for specific folders and files within the /home/ directory, particularly the LuciEntry folder and its subfolders.
 
-`CommandName` is an enumeration that defines different possible command types. When creating a new command, add a new name to this enumeration to represent your new command type.
-### Device
+#### Update Script Functions:
+Updates Python and Arduino script files with the latest Wi-Fi configuration details stored in a JSON file (wifi_info.json).
 
-A Device is a class representing a unique entity capable of receiving and executing Commands. It holds information like `id` and the list of `commands` it should execute.
+#### Main Function:
+Displays a welcome message with the project logo.
+Checks if the current Wi-Fi SSID matches the stored SSID.
+Prompts the user to change Wi-Fi details if needed, updating the wifi_info.json file accordingly.
+Updates Wi-Fi configuration in Python and Arduino script files.
+Prints status messages indicating whether changes were made or if the server is ready to run.
 
-```ts
-public addCommand(command: string | Command, payload?: any): boolean {
+#### Execution:
+Invokes the main function when the script is run.
 
-    const newCommand: Command | undefined = (typeof command == "string") ? CommandMap.get(command)?.clone() : command;
-	
-    newCommand?.setPayload(payload || {});
-	
-    if (newCommand == undefined){
-        console.error(`Could not find command`);
-	return false
-    }
-	
-    this._commands.push(newCommand);
-	
-    return true;
+This Python script streamlines the process of updating Wi-Fi configuration details across multiple project files, ensuring consistency and ease of use.
 
-}
-```
+### JSON File: wifi_info.json
+The wifi_info.json file stores essential Wi-Fi configuration details required for the Lucid Dreaming Portable Prototype project. Below are the key attributes of the JSON file:
 
-The payload can be any type, this is because it will be passed in the body of the request, therefore, there is no way we can know the type. To ensure the server does not crash you should handle invalid payloads in the `setPayload` method.
+#### SSID:
+Represents the name of the Wi-Fi network (Service Set Identifier) that the Raspberry Pi connects to.
+Example: "ssid": "Monash WiFi"
 
-In the future, the expectation is to have devices connect themselves to the server when they are turned on. This would likely involve some form of automatic device registration and handshake process between the device and the server to establish a connection and exchange necessary information, such as the device's ID and capabilities.
-## Endpoints
+#### Password:
+Contains the password required for accessing the Wi-Fi network specified by the SSID.
+Example: "password": "MonashPassword12345"
 
-markdownCopy code
+#### IP Address:
+Stores the IP address assigned to the Raspberry Pi within the Wi-Fi network.
+Example: "ip_address": "192.168.1.1"
 
-#### `GET /` 
-- **Description:** Serves the root of the server. 
-- **Response:** `LUCI-REALITY`  
-#### `GET /blockCommands` 
-- **Description:** Retrieves the block status of commands. 
-- **Response:**
-```json 
-{     
-    "BLOCK_COMMANDS": boolean
-}
-```
+This JSON file serves as a central repository for storing Wi-Fi configuration details, facilitating easy access and update of essential network settings used by the Lucid Dreaming Prototype project.
 
-#### `GET /devices`
+## Folder: Arduino Libraries
+The "Arduino Libraries" folder contains the libraries needed for Arduino IDE and the ESP8266 device codes to run. Below are the key aspects of this folder:
 
-- **Description:** Retrieves a list of all connected devices.
-- **Response:**
-```json
-{   
-    "devices": Device[]
-}
-```
+### Purpose:
+This folder houses the libraries needed for the Arduino IDE to run the device codes
 
-#### `GET /device/:deviceId`
+### Contents:
+Includes the Adafruit_NeoPixel.h, ArduinoJson.h, ESP8266HTTPClient.h, ESP8266WiFi.h, and SoftwareSerial.h libraries folders
 
-- **Description:** Retrieves information of a specific device by ID.
-- **Parameters:** `deviceId` - ID of the device.
-- **Response:**
-```json
-{
-  "device": Device
-}
-```
+### Integration:
+These libraries should be copied into the Arduino Libraries folder of the Pi so that the device codes would work.
 
-#### `GET /commands/:deviceId`
+## Folder: Command-Scripts
+The "Command-Scripts" folder contains Python scripts responsible for executing various commands and functionalities within the Lucid Dreaming Portable Prototype project. Below are the key aspects of this folder:
 
-- **Description:** Retrieves all commands for a specific device by ID. Commands are blocked if `BLOCK_COMMANDS` is true.
-- **Parameters:** `deviceId` - ID of the device.
-- **Response:**   
-```json
-{
-  "commands": Command[]
-}
-```
-#### `GET /command/:deviceId`
+### Purpose:
+This folder houses Python scripts that handle command execution, communication with devices, and other operational tasks within the project.
 
-- **Description:** Retrieves the next command for a specific device by ID.
-- **Parameters:** `deviceId` - ID of the device.
-- **Response:**
-```json
-{
-  "command": Command
-}
-```
-#### `POST /blockCommands`
+### Contents:
+It typically includes scripts such as AirPump.py, AudioStimulus.py, BlockCommands.py, CommandSender.py, GVS_Stimulus.py, TACS_Stimulus.py, UnblockCommands.py, and VisualStimulus.py.
+These scripts may interact with hardware components, process sensory inputs, or control stimulus delivery based on predefined commands.
 
-- **Description:** Blocks all commands and clears the current commands for all devices.
-- **Response:**
-```json
-{
-  "message": "Commands blocked"
-}
-```
-#### `POST /unblockCommands`
+### Functionality:
+Each Python script serves a specific purpose related to the project's functionality, such as controlling air pumps, generating audio stimuli, managing visual stimuli, and facilitating communication with devices.
 
-- **Description:** Unblocks all the commands.
-- **Response:**
-```json
-{
-  "message": "Commands unblocked"
-}
-```
-#### `POST /device/:deviceId`
+### Integration:
+The main script being used is the "CommandSender.py" which controls the system autonomously when activated. The other scripts are used to test the individual components of the system when needed for debugging the system.
 
-- **Description:** Adds a new device.
-- **Parameters:** `deviceId` - ID of the new device.
-- **Response:**
-```json
-{
-  "message": "Device added"
-}
-```
-#### `POST /command/:deviceId/:commandName`
+## Folder: Devices
+The "Devices" folder contains Arduino sketches (.ino files) representing firmware programs for various hardware devices used in the Lucid Dreaming Portable Prototype project. Here's an overview of this folder:
 
-- **Description:** Adds a new command to a specific device by ID.
-- **Parameters:**
-    - `deviceId` - ID of the device.
-    - `commandName` - Name of the command.
-- **Request Body:** Payload for the command.
-- **Response:**
-```json
-{
-  "message": "Command added"
-}
-```
+### Purpose:
+This folder stores firmware code written in Arduino language (based on C/C++) for programming microcontroller-based devices used within the project.
 
-## Onboarding
-This md is for onboarding devs.
+### Contents:
+It typically includes sketches such as Device_1-Emergency_Button.ino, Device_2-LED.ino, Device_3-Speakers.ino, Device_4-Bubble_Motor.ino, Device_5-GVS.ino, and Device_6-TACS.ino, among others.
+Each sketch corresponds to a specific hardware device or component and contains instructions for its operation, input/output handling, and communication protocols.
 
-### Instructions
+### Functionality:
+These Arduino sketches define the behavior and functionality of individual devices, such as emergency buttons, LEDs, speakers, motors, galvanic vestibular stimulators (GVS), and transcranial alternating current stimulators (TACS).
 
-Add the instruction code to the `InstructionCode` enum.
-
-```typescript
-export enum InstructionCode {
-	NEW_INSTRUCTION = unique_code
-}
-```
-
-Create a new `Instruction`
-
-```typescript
-interface Payload {
-  // Put whatever object attributes you need for the payload
-}
-
-class NewInstruction extends Instruction<Payload> {
-  
-  public constructor(payload_props){
-    super(InstructionCode.NEW_INSTRUCTION, payload)
-  }
-  
-}
-```
-
-### Commands
-
-Add the name to the `CommandName` enum
-
-```typescript
-export enum CommandName {
-    NEW_COMMAND = "NewCommand"
-}
-```
-
-Create a new `Command`
-
-```typescript
-class NewCommand extends Command {
-  
-  public constructor(){
-    super(CommandName.NEW_COMMAND, [
-      ...add required instructions here
-    ])
-  }
-  
-}
-```
-
-Add command to `CommandMap` in `Commands.ts`
-
-```typescript
-const CommandMap: Map<string, Command> = new Map();
-
-CommandMap.set(CommandName.NEW_COMMAND, new NewCommand());
-```
+### Integration:
+Once uploaded to respective microcontrollers (e.g., Arduino boards), these sketches enable the devices to perform predefined actions, respond to commands, and interact with other system components.
 
 # New Pi Setup Procedure
 
 ## Setting Up Your New Raspberry Pi
-With your new Raspberry Pi, you need to install Raspbian OS onto the SD card for your 
+With your new Raspberry Pi, you need to install Raspbian OS onto the SD card by using the Raspberry Pi Imager to install Raspberry Pi OS to a microSD card, for use on your Raspberry Pi.
 
+https://www.raspberrypi.com/software/
 
+Once installed, you can boot the Pi with the newly loaded microSD with the OS, and set up the Pi accordingly.
+The common naming conventions and passwords used when setting up Raspberry Pis for the lab is as follows:
+
+username: xgl-monash
+password: abc
 
 ## Installing Dependencies
+Once the new Raspberry Pi is booted, the dependencies needed for the server needs to be downloaded, which is as follows
 
+### Update the Pi
+```bash
+sudo apt-get update
+sudo apt-get upgrade
+```
 
+### Install python
+```bash
+sudo apt-get install python3 python3-pip
+```
 
-## Installing Arduino IDE and relevant libraries
+### Install node.js
+```bash
+sudo apt-get install node.js
+```
 
+### Install npm
+```bash
+sudo apt-get install npm
+```
 
+### Install typescript
+```bash
+sudo npm install -g typescript
+```
+
+### Install python packages
+The Requests module can be installed using the following code below
+```bash
+sudo apt install python3-requests
+```
+
+However, to install the playsound and brainflow module, you would need to use a virtual environment, which is done by
+```bash
+python3 -m venv path/to/venv
+```
+where you replace 'path/to/venv' with the desired location for your virtual environment
+
+Then avtivate it by running
+```bash
+source path/to/venv/bin/activate
+```
+This command activates the virtual environment and changes your prompt to indicate that the environment is active.
+
+With the virtual environment activated, you can now install the Python package using pip. Run the following command:
+```bash
+pip install playsound
+pip install brainflow
+```
+
+After the installation is complete, you can verify that the package is installed correctly by running:
+```bash
+pip list
+```
+This command will display a list of installed packages in the virtual environment.
+
+When you're done working in the virtual environment, you can deactivate it by running the following command:
+```bash
+deactivate
+```
+This command will return you to your original shell session.
+
+### Install lxterminal
+```bash
+sudo apt-get install lxterminal
+```
 
 ## Cloning Server Codes
+To clone the server codes from the Git repository, a public SSH key needs to be generated and added to the xgl.monash@gmail.com Github account.
+To do this:
+1. open a terminal in the Pi and enter
+```bash
+ssh-keygen -t rsa -C xgl.monash@gmail.com
+```
+Accept the default values by pressing enter when prompted, and the SSH key should be generated. 
+
+2. Navigate to the .ssh folder in the user folder of the Pi. In there, would be the SSH key which typically begins with "ssh-rsa". Copy the key and add it to the Github account. This is done by navigating on Github to Settings > SSH and GPG keys > New SSH key. Add the new SSH key and give it a title before saving it by pressing "Add SSH key".
+
+Once the SSH key is added, you can now clone the server codes onto the Pi. Navigate to the location you wish to store the Server code folder and open the terminal of that path(as standard practice, the lab usually sets the path to /home/"user"), where user is the username of the Pi. In this terminal, enter 
+```bash
+git clone git@github.com:Exertion-Games-Lab/LuciEntry.git
+```
+
+The codes should now be cloned into your Pi. Lastly, open the terminal with the path to "LuciEntry" and enter
+```bash
+chmod +x start.sh
+```
+This gives the shell file execute permissions.
+
+You might also want to open a terminal at the Server directory of the LuciEntry folder and run:
+```bash
+npm install
+```
+to install all the necessary dependencies that you may have missed.
+
+Once that is done, the project codes are ready to be used.
+
+## Installing Arduino IDE and relevant libraries
+Install the Arduino IDE in the Pi from 
+https://www.arduino.cc/en/software
+Download the latest version of Arduino IDE for Linux ARM 64 bits.
+and follow the instructions here to extract and install it: https://www.raspberrypi-spy.co.uk/2020/12/install-arduino-ide-on-raspberry-pi/
+
+Add the ESP8266 Board into the Arduino IDE
+https://randomnerdtutorials.com/how-to-install-esp8266-board-arduino-ide/
+
+Copy the necessary Arduino libraries into the library folder of the Arduino IDE. 
+This is done by navigating to  the "LuciEntry>Arduino Libraries" folder, copying the folders, and pasting it into the "Arduino>libraries" folder in your Pi.
+
+# User Guide 
+The following section contains the details for using the server on a Raspberry Pi after it is installed.
+
+[User Guide Diagram](https://github.com/Exertion-Games-Lab/LuciEntry/blob/main/UserGuide.drawio.png)
+Above shows the brief diagram of the walkthrough in starting the server for the prototype.
+
+## Step 1: Open a terminal with the path to the "LuciEntry" Folder
+To do this, open the file manager and navigate to the LuciEntry folder which was cloned from Git. Right-click and select "Open in Terminal"
+
+## Step 2: Run Configure WiFi python program
+On the opened terminal, run the configure WiFi program by typing:
+```bash
+python configure_wifi.py
+```
+When the program runs, it will present 2 prompts to the user:
+  1.  "Warning: The connected WiFi SSID 'your_wifi' does not match the stored WiFi SSID 'stored_wifi'. Do you want to change WiFi details? (y/n)"
+    
+  2.  "Connected WiFi SSID: 'your_wifi'"
+
+### Prompt #1
+when this prompt appears, it means the current WiFi the Pi is connected to, is not the same as the one stored on the system. When this prompt appears, users have 2 options
+  1. Option 1 (y): Users can update the wifi details to the one currently connected to the Pi. Users are then prompted to enter the WiFi password twice, which would then update the server files with the new WiFi details and present the prompt "Changes were made. Please connect the devices to the Pi and upload the newly configured codes before running the server.", which alerts users that files have been updated and the new code files need to be uploaded into the ESP8266s boards, as outlined in the steps in [Prompt #2-2](#prompt-2-2). When the devices codes have been uploaded to each device's ESP8266 board, the server is ready to be started, following the steps outlined in [Step 3](#step-3-start-server)
+
+  2. Option 2 (n): Users can choose to not update the files, and instead connect to the wifi that is stored in the system. 
+
+### Prompt #2
+When this prompt appears, it means the current WiFi the Pi is connected to, is the same as the one stored on the system. When this prompt appears, 2 subsequent prompts will appear:
+  1.  "No changes were made. Server is ready to run."
+
+  2.  "Changes were made. Please connect the devices to the Pi and upload the newly configured codes before running the server."
+
+#### Prompt #2-1
+When this prompt appears, it means that all the files are up to date and the server is ready for start-up. You can then proceed to [Step 3](#step-3-start-server)
+
+#### Prompt #2-2
+When this prompt appears, it means the command scripts and device codes have been updated and users need to upload the new codes to the devices.
+You can upload the device codes using the Arduino IDE on the Raspberry Pi. This is done by navigating to the folder "LuciEntry > Devices". In this folder, there are folders for each devices. Within each folder, is an .ino file which is the arduino code which you would upload into the ESP8266s. Opening the .ino file would open the Arduino IDE with the code file you opened. In the Arduino IDE, select the correct "Boards" and "Ports" in the "Tools" section, before pressing upload (the arrow-right button) to upload the code to the ESP8266 boards. When the devices codes have been uploaded to each device's ESP8266 board, the server is ready to be started, following the steps outlined in [Step 3](#step-3-start-server)
+
+## Step 3: Start Server
+In the same terminal, you can enter:
+
+```bash
+./start.sh
+```
+to start up the server, and the respective python programs needed for the system.
+This should open up 3 terminals called "Server", "Speaker" and "Command Sender".

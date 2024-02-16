@@ -1,0 +1,259 @@
+<mxfile host="app.diagrams.net" modified="2024-02-13T00:30:19.786Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0" etag="rHb3sAXOwO7a6X4TPNTV" version="23.1.3" type="device">
+  <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
+    <mxGraphModel dx="3537" dy="1322" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-2" value="" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;endFill=0;endSize=8;strokeWidth=1;shadow=0;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="WIyWlLk6GJQsqaUBKTNV-3" target="93s21821dV0KVA2MfLMT-0" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="440.0999999999999" y="150.07213114754097" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-3" value="Open a terminal from the &quot;LuciEntry&quot; folder path." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+          <mxGeometry x="200" y="40" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-0" value="Run &quot;configure_wifi&quot; python program" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="200" y="160" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-2" value="&quot;Connected WiFi SSID: &#39;your_wifi&#39;&quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="-559.5" y="270" width="560" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-3" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-0" target="93s21821dV0KVA2MfLMT-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="450" y="250" as="sourcePoint" />
+            <mxPoint x="550" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-4" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-5" value="&quot;Warning: The connected WiFi SSID &#39;your_wifi&#39; does not match the stored WiFi SSID &#39;stored_wifi&#39;&quot;&lt;br&gt;&quot;Do you want to change WiFi details? (y/n): &quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="560" y="270" width="560" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-6" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-5" source="93s21821dV0KVA2MfLMT-0">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="210" as="sourcePoint" />
+            <mxPoint x="610" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-7" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-11" value="User Input: &quot;y&quot;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="600" y="440" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-12" value="User Input: &quot;n&quot;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="960" y="440" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-13" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-5" target="93s21821dV0KVA2MfLMT-11">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="570" as="sourcePoint" />
+            <mxPoint x="470" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-14" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-12">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="840" y="370" as="sourcePoint" />
+            <mxPoint x="670" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-15" value="&quot;Please connect to this WiFi: &#39;stored_wifi&#39;&quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="895" y="560" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-16" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-12" target="93s21821dV0KVA2MfLMT-15">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="920" y="510" as="sourcePoint" />
+            <mxPoint x="1020" y="510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-17" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-18" value="&quot;Enter the WiFi password for &#39;your_wifi&#39;: &quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="535" y="560" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-19" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-18" source="93s21821dV0KVA2MfLMT-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="530" as="sourcePoint" />
+            <mxPoint x="605" y="615" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-20" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-24" value="User Input: &quot;your_wifi_password&quot;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="560" y="720" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-25" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-18" target="93s21821dV0KVA2MfLMT-24">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="740" as="sourcePoint" />
+            <mxPoint x="460" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-28" value="&quot;Confirm the WiFi password for &#39;your_wifi&#39;: &quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="535" y="840" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-29" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-28" source="93s21821dV0KVA2MfLMT-24">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="660" y="780" as="sourcePoint" />
+            <mxPoint x="605" y="925" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-30" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-31" value="User Input: &quot;your_wifi_password&quot;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="560" y="1000" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-32" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-28" target="93s21821dV0KVA2MfLMT-31">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="1050" as="sourcePoint" />
+            <mxPoint x="460" y="1000" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-33" value="&quot;Passwords do not match! Please try again.&quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="230" y="760" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-35" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-31" target="93s21821dV0KVA2MfLMT-33">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="516" y="1050" as="sourcePoint" />
+            <mxPoint x="311" y="870" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="355" y="1020" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-36" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-37" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-33" target="93s21821dV0KVA2MfLMT-18">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="620" as="sourcePoint" />
+            <mxPoint x="460" y="700" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="355" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-38" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-39" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-31" target="93s21821dV0KVA2MfLMT-41">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="1089" as="sourcePoint" />
+            <mxPoint x="660" y="1120" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-40" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-41" value="&quot;WiFi configuration updated!&quot;&lt;br&gt;&quot;Updating files with new WiFi details.&quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="535" y="1120" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-42" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-44" source="93s21821dV0KVA2MfLMT-41">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="660" y="1250" as="sourcePoint" />
+            <mxPoint x="660" y="1330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-43" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-44" target="93s21821dV0KVA2MfLMT-45">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-44" value="&quot;Changes were made. Please connect the devices to the pi and upload the newly configured codes before running the server.&quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="476.25" y="1280" width="367.5" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-52" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-45" target="93s21821dV0KVA2MfLMT-62">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="660" y="1600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-45" value="User updates the esp8266s with the new codes." style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="520" y="1460" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-48" target="93s21821dV0KVA2MfLMT-0">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1280" y="740" />
+              <mxPoint x="1280" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-48" value="User connects to &#39;stored_wifi&#39;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="920" y="720" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-49" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-48" source="93s21821dV0KVA2MfLMT-15">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1020" y="660" as="sourcePoint" />
+            <mxPoint x="820" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-56" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-59" source="93s21821dV0KVA2MfLMT-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-183.25" y="440" as="sourcePoint" />
+            <mxPoint x="-183.25" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-57" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-56">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-58" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-59" target="93s21821dV0KVA2MfLMT-61">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-59" value="&quot;Changes were made. Please connect the devices to the pi and upload the newly configured codes before running the server.&quot;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="-300" y="440" width="367.5" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-61" target="93s21821dV0KVA2MfLMT-62">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-116" y="1490" />
+              <mxPoint x="280" y="1490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-61" value="User updates the esp8266s with the new codes." style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="-256.25" y="620" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-62" value="&#39;User starts server: ./start.sh&#39;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="200" y="1600" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-63" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="93s21821dV0KVA2MfLMT-62" target="93s21821dV0KVA2MfLMT-65">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-116.25" y="1690" as="sourcePoint" />
+            <mxPoint x="-116.25" y="1820" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-64" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-63">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-65" value="3 Terminals open, one for npm start, one for speakers python program and 1 for command sender python program." style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="96.25" y="1750" width="367.5" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-66" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-68" source="93s21821dV0KVA2MfLMT-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-749" y="360" as="sourcePoint" />
+            <mxPoint x="-653.25" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-67" value="Output" style="edgeLabel;resizable=0;html=1;;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="93s21821dV0KVA2MfLMT-66">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-68" value="No changes were made. Server is ready to run." style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="-770" y="430" width="367.5" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="93s21821dV0KVA2MfLMT-69" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" target="93s21821dV0KVA2MfLMT-62" source="93s21821dV0KVA2MfLMT-68">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-630" y="580" as="sourcePoint" />
+            <mxPoint x="-586.25" y="600.0000000000002" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="-586" y="1490" />
+              <mxPoint x="280" y="1490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

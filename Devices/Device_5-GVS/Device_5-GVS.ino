@@ -34,8 +34,8 @@ enum InstructionCodes {
     TurnOffLED = 2,
     PlaySound = 3,
     StopSound = 4,
-    IncreaseVibration = 5,
-    DecreaseVibration = 6,
+    StartTACS = 5,
+    StopTACS = 6,
     LiftLegs = 7,
     LowerLegs = 8,
     LiftHead = 9,
@@ -208,7 +208,7 @@ void executeInstruction(Instruction instruction){
         case StartTACS:
             Turn(true, instruction.payload["intensity"]);
             break;
-        case TurnOffLED:
+        case StopTACS:
             Turn(false, 0);
             break;
         case Wait:

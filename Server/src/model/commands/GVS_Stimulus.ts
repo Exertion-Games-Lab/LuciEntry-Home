@@ -1,7 +1,7 @@
 import Command from "../core/command/Command";
 import { CommandName } from "../core/command/CommandNames";
-import TurnOffLED from "../instructions/TurnOffLED";
-import TurnOnLED from "../instructions/TurnOnLED";
+import StartTACS from "../instructions/StartTACS";
+import StopTACS from "../instructions/StopTACS";
 import Wait from "../instructions/Wait";
 
 class GVS_Stimulation extends Command {
@@ -9,7 +9,7 @@ class GVS_Stimulation extends Command {
     private millis: number;
     private intensity: number;
 
-    public constructor(millis: number = 10000){
+    public constructor(millis: number = 10000, intensity: number = 255){
         super(CommandName.GVS_STIMULATION, []);
         this.millis = millis;
         this.intensity = intensity;
