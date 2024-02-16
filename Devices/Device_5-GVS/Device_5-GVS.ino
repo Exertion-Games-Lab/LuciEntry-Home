@@ -25,7 +25,7 @@ int ID = 5;
 // WIFI Details
 const char* SSID = "HUAWEI Nat 10 Pro";
 const char* PASSWORD = "O6Z12D38";
-const String IP_ADDRESS = "192.168.43.196";
+const String IP_ADDRESS = "192.168.43.47";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 // enums 
