@@ -36,7 +36,7 @@ run_python_script() {
 # Main script starts here
 
 # Find folder paths
-find_folder_paths
+find_folder_path
 
 # Start the server
 start_server
