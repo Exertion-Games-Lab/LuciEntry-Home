@@ -63,15 +63,13 @@ void loop() {
   emergencyState = fetchEmergencyState();
 
   if (temp == LOW && emergencyState == false){
-    Serial.println("System Active");
+    post(URL + "unblockCommands", IP_ADDRESS, PORT);
     digitalWrite(LEDEmergency, LOW);
     delay(100);
   }
   else if(temp == HIGH && emergencyState == false){
-    emergencyState = true;
     sendEmergencyStateUpdate(true);
     post(URL + "blockCommands", IP_ADDRESS, PORT);
-    Serial.println("System Inactive");
     digitalWrite(LEDEmergency, HIGH);
     delay(100);
   }
@@ -79,12 +77,11 @@ void loop() {
     emergencyState = false;
     sendEmergencyStateUpdate(false);
     post(URL + "unblockCommands", IP_ADDRESS, PORT);
-    Serial.println("System Active");
     digitalWrite(LEDEmergency, LOW);
     delay(100);
   }
   else if (temp == HIGH && emergencyState == true){
-    Serial.println("System Inactive");
+    post(URL + "blockCommands", IP_ADDRESS, PORT);
     digitalWrite(LEDEmergency, HIGH);
     delay(100);
   }

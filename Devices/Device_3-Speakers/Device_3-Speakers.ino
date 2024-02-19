@@ -34,7 +34,6 @@ void setup() {
 
     // Setup wifi 
     WiFi.mode(WIFI_STA);  // SETS TO STATION MODE!
-    connect();
 
     // Turn on Power indicator LED to indicate power on
     digitalWrite(LEDPower, HIGH);
