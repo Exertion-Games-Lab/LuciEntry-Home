@@ -1,4 +1,4 @@
-#include <SoftwareSerial.h> //Included SoftwareSerial Library
+#include <SoftwareSerial.h> // Included SoftwareSerial Library
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include <ESP8266WiFi.h>
@@ -17,10 +17,10 @@ const int Relay = 14;
 // Local Variables
 bool emergencyState = false;
 bool connected = false;
-int ID = 2; 
+int ID = 2;
 #define NUM_LEDS 28
 
-// LED Strip Ini
+// LED Strip Initialization
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // WIFI Details
@@ -29,14 +29,14 @@ const char* PASSWORD = "O6Z12D38";
 const String IP_ADDRESS = "192.168.43.47";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
-// enums 
+// Enums
 enum InstructionCodes {
     TurnOnLED = 1,
     TurnOffLED = 2,
     Wait = 11,
 };
 
-// structs
+// Structs
 struct Instruction {
     int code;
     JsonObject payload;
@@ -46,8 +46,12 @@ struct Command {
     String name;
     Instruction* instructions;
     int noOfInstructions;
+    // New component
+    int currentInstructionNum; // To trace which instruction to execute next
 };
-// empty command
+
+// Empty command
+Command currentCommand;
 Command EmptyCommand;
 
 void setup() {
@@ -60,11 +64,11 @@ void setup() {
     pinMode(LEDEmergency, OUTPUT);
     pinMode(Relay, OUTPUT);
 
-    // setup LED Strip
+    // Setup LED Strip
     strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();             // Turn OFF all pixels ASAP
 
-    // Setup wifi 
+    // Setup WiFi
     WiFi.mode(WIFI_STA);  // SETS TO STATION MODE!
 
     // Turn on Power indicator LED to indicate power on
@@ -72,32 +76,34 @@ void setup() {
 }
 
 void loop() {
-
     // Check WiFi connection and reflect to indicator light
     if (WiFi.status() == WL_CONNECTED) {
-    // Keep the indicator LED on
-    digitalWrite(LEDWiFi, HIGH);
+        // Keep the indicator LED on
+        digitalWrite(LEDWiFi, HIGH);
     } else {
-    // Turn off the indicator LED
-    digitalWrite(LEDWiFi, LOW);
-    connect();
+        // Turn off the indicator LED
+        digitalWrite(LEDWiFi, LOW);
+        connect();
     }
 
     emergencyState = fetchEmergencyState();
-    if (emergencyState == false){
+    if (!emergencyState) {
       digitalWrite(LEDEmergency, LOW);
       digitalWrite(Relay, LOW);
-      Command command = fetchNextCommand();
-      executeCommand(command);
+      if(currentCommand.noOfInstructions == 0){
+        currentCommand = fetchNextCommand();
+      }
+      else{
+        executeCommand();
+      }
     } else {
-      digitalWrite(LEDEmergency, HIGH);
-      digitalWrite(Relay, HIGH);
+        digitalWrite(LEDEmergency, HIGH);
+        digitalWrite(Relay, HIGH);
+        currentCommand = EmptyCommand;
     }
-
-    delay(2000);
 }
 
-void connect(){
+void connect() {
     // Connect to Wi-Fi network with SSID and password
     WiFi.begin(SSID, PASSWORD);
 
@@ -107,11 +113,11 @@ void connect(){
     }
 
     connected = true;
-    
+
     Serial.println("Connected!");
 }
 
-Command fetchNextCommand(){
+Command fetchNextCommand() {
     Command command = EmptyCommand;
 
     Serial.println("Making http request for next command\n");
@@ -131,8 +137,9 @@ Command fetchNextCommand(){
     if (httpResponseCode == 200) {
         String payload = http.getString();
         command = jsonObjectToCommand(payload);
+        command.currentInstructionNum = 0; // Initialize current instruction number
     } else {
-        Serial.print("Failed to get: ");
+        Serial.print("Failed to get command: ");
         Serial.println(httpResponseCode);
     }
     // Free resources
@@ -146,9 +153,9 @@ Command jsonObjectToCommand(String payload) {
     DeserializationError error = deserializeJson(doc, payload);
 
     if (error) {
-      Serial.println("Failed to read command");
-      Serial.println(error.c_str());
-      return EmptyCommand;
+        Serial.println("Failed to read command");
+        Serial.println(error.c_str());
+        return EmptyCommand;
     }
 
     Command command;
@@ -161,22 +168,25 @@ Command jsonObjectToCommand(String payload) {
 
     int i = 0;
     for (JsonObject jsonInstruction : jsonInstructions) {
-      command.instructions[i].code = jsonInstruction["code"].as<int>();
-      command.instructions[i].payload = jsonInstruction["payload"].as<JsonObject>();
-      i++;
+        command.instructions[i].code = jsonInstruction["code"].as<int>();
+        command.instructions[i].payload = jsonInstruction["payload"].as<JsonObject>();
+        i++;
     }
 
     return command;
 }
 
-void executeCommand(Command command){
-    for (int i=0; i<command.noOfInstructions; i++){
-      executeInstruction(command.instructions[i]);
+void executeCommand() {
+    if (currentCommand.currentInstructionNum < currentCommand.noOfInstructions) {
+        executeInstruction(currentCommand.instructions[currentCommand.currentInstructionNum]);
+    } else {
+        // Command finished, release the command
+        currentCommand = EmptyCommand;
     }
 }
 
-void executeInstruction(Instruction instruction){
-    switch (instruction.code){
+void executeInstruction(Instruction instruction) {
+    switch (instruction.code) {
         case TurnOnLED:
             turnOnLED(instruction.payload["brightness"].as<int>(), instruction.payload["colour"]["r"].as<int>(), instruction.payload["colour"]["g"].as<int>(), instruction.payload["colour"]["b"].as<int>());
             break;
@@ -191,53 +201,71 @@ void executeInstruction(Instruction instruction){
     }
 }
 
-// functionality 
-void turnOnLED(int brightness, int red, int green, int blue){
-  Serial.println("Turn on led");
-  strip.setBrightness(brightness);  // Set BRIGHTNESS to about 1/5 (max = 255)
-  for (int i = 0; i < NUM_LEDS; i++) {           
-    strip.setPixelColor(i, strip.Color(red, green, blue));   // Set pixel's color (in RAM)
-  }
-  strip.show();  
+// Functionality 
+void turnOnLED(int brightness, int red, int green, int blue) {
+    Serial.println("Turn on led");
+    strip.setBrightness(brightness);  // Set BRIGHTNESS to about 1/5 (max = 255)
+    for (int i = 0; i < NUM_LEDS; i++) {
+        strip.setPixelColor(i, strip.Color(red, green, blue));   // Set pixel's color (in RAM)
+    }
+    strip.show();  
+    currentCommand.currentInstructionNum++; //remember to add the number after the completion of the instruction 
 }
 
-void turnOffLED(){
-  Serial.println("Turn off led");
-  strip.clear();
-  strip.show();
+void turnOffLED() {
+    Serial.println("Turn off led");
+    strip.clear();
+    strip.show();
+    currentCommand.currentInstructionNum++; //remember to add the number after the completion of the instruction 
 }
 
-void wait(int time){
-  Serial.println(time);
-  delay(time);
+// Function to wait for a specified duration without blocking the loop
+void wait(unsigned long time) {
+    static unsigned long waitStartTime = 0;
+    static unsigned long waitDuration = 0;
+
+    if (waitDuration == 0) {
+        // Start waiting
+        waitStartTime = millis();
+        waitDuration = time;
+    } else {
+        // Continue waiting
+        unsigned long elapsedTime = millis() - waitStartTime;
+        if (elapsedTime >= waitDuration) {
+            // Finish waiting
+            waitDuration = 0;
+            currentCommand.currentInstructionNum++; // Move to the next instruction
+        }
+    }
 }
 
+// Function to fetch the emergency state from the server
 bool fetchEmergencyState() {
-  bool emergencyState = false;
+    bool emergencyState = false;
 
-  WiFiClient client;
-  HTTPClient http;
+    WiFiClient client;
+    HTTPClient http;
 
-  client.connect(IP_ADDRESS, 8080);
+    client.connect(IP_ADDRESS, 8080);
 
-  String path = URL + "emergencyState/";
+    String path = URL + "emergencyState/";
 
-  http.begin(client, path.c_str());
+    http.begin(client, path.c_str());
 
-  // Send HTTP GET request
-  int httpResponseCode = http.GET();
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
 
-  if (httpResponseCode == 200) {
-    String payload = http.getString();
-    DynamicJsonDocument doc(1024);
-    deserializeJson(doc, payload);
-    emergencyState = doc["emergencyState"];
-  } else {
-    Serial.print("Failed to get emergency state: ");
-    Serial.println(httpResponseCode);
-  }
+    if (httpResponseCode == 200) {
+        String payload = http.getString();
+        DynamicJsonDocument doc(1024);
+        deserializeJson(doc, payload);
+        emergencyState = doc["emergencyState"];
+    } else {
+        Serial.print("Failed to get emergency state: ");
+        Serial.println(httpResponseCode);
+    }
 
-  http.end();
+    http.end();
 
-  return emergencyState;
+    return emergencyState;
 }
