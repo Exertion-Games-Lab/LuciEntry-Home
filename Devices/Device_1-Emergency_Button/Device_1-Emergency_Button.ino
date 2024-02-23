@@ -18,9 +18,9 @@ int ID = 1;
 int temp;
 
 //WiFi Details
-const char* SSID = "HUAWEI Nat 10 Pro";
-const char* PASSWORD = "O6Z12D38";
-const String IP_ADDRESS = "192.168.43.47";
+const char* SSID = "7wifi";
+const char* PASSWORD = "40666888";
+const String IP_ADDRESS = "192.168.85.231 2001:8004:15a0:40eb:4f60:637b:a455:de30";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 const int PORT = 8080;
 
