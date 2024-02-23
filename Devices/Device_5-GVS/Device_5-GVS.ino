@@ -54,9 +54,11 @@ struct Command {
     String name;
     Instruction* instructions;
     int noOfInstructions;
+    int currentInstructionNum;
 };
 // empty command
 Command EmptyCommand;
+Command currentCommand;
 
 void setup() {
     // Serial Monitor Startup
@@ -76,7 +78,6 @@ void setup() {
 
     // Setup wifi 
     WiFi.mode(WIFI_STA);  // SETS TO STATION MODE!
-    connect();
 
     // Initialise Device
     analogWrite(PWMControl, 0);
@@ -100,15 +101,19 @@ void loop() {
     }
 
     emergencyState = fetchEmergencyState();
-    if (emergencyState == false){
+    if (!emergencyState){
       digitalWrite(LEDEmergency, LOW);
       digitalWrite(Relay, LOW);
-      Command command = fetchNextCommand();
-      executeCommand(command);
-      delay(2000);
+      if (currentCommand.noOfInstructions == 0){
+        currentCommand = fetchNextCommand();
+      }
+      else{
+        executeCommand();
+      }
     } else {
       digitalWrite(LEDEmergency, HIGH);
       digitalWrite(Relay, HIGH);
+      currentCommand = EmptyCommand;
     }
 
     delay(2000);
@@ -197,9 +202,12 @@ Command jsonObjectToCommand(String payload) {
     return command;
 }
 
-void executeCommand(Command command){
-    for (int i=0; i<command.noOfInstructions; i++){
-        executeInstruction(command.instructions[i]);
+void executeCommand(){
+    if (currentCommand.currentInstructionNum < currentCommand.noOfInstructions) {
+        executeInstruction(currentCommand.instructions[currentCommand.currentInstructionNum]);
+    } else {
+        // Command finished, release the command
+        currentCommand = EmptyCommand;
     }
 }
 
@@ -219,33 +227,35 @@ void executeInstruction(Instruction instruction){
     }
 }
 
-
-void wait(int time){
-  //delay(time);
-  Serial.println("Wait");
-}
-
-
 void ChangeGVSDirection(int time)
 {
-  int cnt=0;
-  int delayInterval = 1000/GVSHZ/2;  
-  while(cnt<time)
-  {
-    
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
-    Serial.println("CW");
-    delay(delayInterval);
-    cnt+=delayInterval;
-    
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
-    Serial.println("CCW");
-    delay(delayInterval);
-    cnt+=delayInterval;
+  static unsigned long waitStartTime = 0;
+  static unsigned long waitDuration = 0;
+
+  if (waitDuration == 0){
+    waitStartTime = millis();
+    waitDuration = time;
+  } else{
+    unsigned long elapsedTime = millis() - waitStartTime;
+    if (elapsedTime >= waitDuration){
+      waitDuration = 0;
+      currentCommand.currentInstructionNum++;
+    }
+    else{
+      elapsedTime = millis() - waitStartTime;
+      int currentGVSNum = elapsedTime*GVSHZ*2;
+      if (currentGVSNum%2 == 0){
+        digitalWrite(IN1, HIGH);
+        digitalWrite(IN2, LOW);
+        Serial.println("CW");
+      }
+      else{
+        digitalWrite(IN1, LOW);
+        digitalWrite(IN2, HIGH);
+        Serial.println("CCW");
+      }
+    }
   }
-  
 }
 
 void Turn(bool active, int intensity)
@@ -260,6 +270,7 @@ void Turn(bool active, int intensity)
     analogWrite(PWMControl, 0);
     Serial.println("Turn off");
   }
+  currentCommand.currentInstructionNum++; // Move to the next instruction
 }
 
 bool fetchEmergencyState() {

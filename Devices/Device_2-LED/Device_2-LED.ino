@@ -101,6 +101,8 @@ void loop() {
         digitalWrite(Relay, HIGH);
         currentCommand = EmptyCommand;
     }
+    
+    delay(2000);
 }
 
 void connect() {
