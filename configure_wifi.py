@@ -28,9 +28,7 @@ logo = """
 def get_current_wifi_ssid():
     try:
         result = subprocess.run(["iwgetid", "-r"], capture_output=True, text=True)
-        ip_addresses = result.stdout.strip().split()
-        ipv4_addresses = [address for address in ip_addresses if '.' in address]
-        return ipv4_addresses[0] if ipv4_addresses else None
+        return result.stdout.strip()
     except Exception as e:
         print(f"Error obtaining current WiFi SSID: {e}")
         return None
@@ -38,8 +36,9 @@ def get_current_wifi_ssid():
 def get_ip_address():
     try:
         result = subprocess.run(["hostname", "-I"], capture_output=True, text=True)
-        ip_address = result.stdout.strip()
-        return ip_address
+        ip_addresses = result.stdout.strip().split()
+        ipv4_addresses = [address for address in ip_addresses if '.' in address]
+        return ipv4_addresses[0] if ipv4_addresses else None
     except Exception as e:
         print(f"Error obtaining IP address: {e}")
         return None
