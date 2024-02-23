@@ -21,7 +21,7 @@ class VisualStimulation extends Command {
 
     public generateInstructions(colour?: Colour, brightness?: number){
         const flashCount = 10;
-        const flashRate = 1000;
+        const flashRate = 500;
         const instructions = [];
 
         for (let i=0; i<flashCount; i++){
