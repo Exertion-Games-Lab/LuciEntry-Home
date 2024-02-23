@@ -24,9 +24,9 @@ int ID = 2;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // WIFI Details
-const char* SSID = "7wifi";
-const char* PASSWORD = "40666888";
-const String IP_ADDRESS = "192.168.85.231 2001:8004:15a0:40eb:4f60:637b:a455:de30";
+const char* SSID = "The boss";
+const char* PASSWORD = "37a472adae";
+const String IP_ADDRESS = "192.168.1.118";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 // Enums
