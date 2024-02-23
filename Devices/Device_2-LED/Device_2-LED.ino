@@ -102,7 +102,7 @@ void loop() {
         currentCommand = EmptyCommand;
     }
     
-    delay(2000);
+    //delay(2000);
 }
 
 void connect() {
@@ -120,6 +120,25 @@ void connect() {
 }
 
 Command fetchNextCommand() {
+  static unsigned long waitStartTime = 0;
+  static unsigned long waitDuration = 0;
+
+  if (waitDuration == 0){
+    waitStartTime = millis();
+    waitDuration = 2000;
+  } 
+  else
+  {
+    unsigned long elapsedTime = millis() - waitStartTime;
+    if (elapsedTime < waitDuration){
+      return EmptyCommand;
+    }
+    else
+    {
+      waitDuration = 0;
+    } 
+  }  
+
     Command command = EmptyCommand;
 
     Serial.println("Making http request for next command\n");
@@ -225,14 +244,16 @@ void turnOffLED() {
 void wait(unsigned long time) {
     static unsigned long waitStartTime = 0;
     static unsigned long waitDuration = 0;
-
+    // Serial.println("enter");
     if (waitDuration == 0) {
         // Start waiting
         waitStartTime = millis();
         waitDuration = time;
+        //Serial.println(waitDuration);
     } else {
         // Continue waiting
         unsigned long elapsedTime = millis() - waitStartTime;
+        //Serial.println(elapsedTime);
         if (elapsedTime >= waitDuration) {
             // Finish waiting
             waitDuration = 0;

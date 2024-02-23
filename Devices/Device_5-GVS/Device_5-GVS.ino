@@ -116,7 +116,6 @@ void loop() {
       currentCommand = EmptyCommand;
     }
 
-    delay(2000);
 }
 
 void ReadInput()
@@ -145,6 +144,24 @@ void connect(){
 }
 
 Command fetchNextCommand(){
+  static unsigned long waitStartTime = 0;
+  static unsigned long waitDuration = 0;
+
+  if (waitDuration == 0){
+    waitStartTime = millis();
+    waitDuration = 2000;
+  } 
+  else
+  {
+    unsigned long elapsedTime = millis() - waitStartTime;
+    if (elapsedTime < waitDuration){
+      return EmptyCommand;
+    }
+    else
+    {
+      waitDuration = 0;
+    } 
+  }  
     Command command = EmptyCommand;
 
     Serial.println("Making http request for next command\n");
@@ -189,9 +206,10 @@ Command jsonObjectToCommand(String payload) {
     JsonArray jsonInstructions = doc["command"]["instructions"].as<JsonArray>();
     command.noOfInstructions = jsonInstructions.size();
     command.instructions = new Instruction[command.noOfInstructions];
-
+    command.currentInstructionNum=0;
     Serial.println("Command: " + command.name);
-
+    Serial.println("no of instructions: ");
+    Serial.println(command.noOfInstructions);
     int i = 0;
     for (JsonObject jsonInstruction : jsonInstructions) {
       command.instructions[i].code = jsonInstruction["code"].as<int>();
@@ -243,7 +261,7 @@ void ChangeGVSDirection(int time)
     }
     else{
       elapsedTime = millis() - waitStartTime;
-      int currentGVSNum = elapsedTime*GVSHZ*2;
+      int currentGVSNum = elapsedTime*GVSHZ*2/1000;
       if (currentGVSNum%2 == 0){
         digitalWrite(IN1, HIGH);
         digitalWrite(IN2, LOW);
