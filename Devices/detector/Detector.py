@@ -5,7 +5,7 @@ import numpy as np
 import pickle
 
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
-from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations
+from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes
 
 import os
 
@@ -124,6 +124,12 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
     #reconnected counter
     timeoutCnt = 0
     TIMEOUT_THRESHOLD = 601
+    
+    # LR signal counters
+    N_count = 0
+    L_count = 0
+    LR_count = 0
+    T_count = 0
 
     #calculate REM every TIME_WINDOW
     TIME_WINDOW = 120
@@ -194,40 +200,52 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             time.sleep(1)
             timeoutCnt+=1
             eog_data = board.get_current_board_data(250)
-            DataFilter.detrend(eog_data[eog_channel], DetrendOperations.LINEAR.value)
-
-            eog_mean = np.mean(eog_data[eog_channel])
-
-            offset = 0.5
-            if eog_mean < eog_baseline_mean + offset and eog_mean > eog_baseline_mean - offset:
-                eog_class = "neutral"
-            else:
-                if eog_mean > eog_baseline_mean:
-                    eog_class = "left"
-                if eog_mean < eog_baseline_mean:
+            # Applying filters to channels
+            DataFilter.detrend(eog_data[eog_channel_left], DetrendOperations.LINEAR.value)
+            DataFilter.detrend(eog_data[eog_channel_right], DetrendOperations.LINEAR.value)
+            DataFilter.perform_bandpass(eog_data[eog_channel_left], 250, 0.5, 7, 4, FilterTypes.BUTTERWORTH.value, 0)
+            DataFilter.perform_bandpass(eog_data[eog_channel_right], 250, 0.5, 7, 4, FilterTypes.BUTTERWORTH.value, 0)
+            DataFilter.perform_rolling_filter(eog_data[eog_channel_left], 5, 2)  # Use '2' for moving
+            DataFilter.perform_rolling_filter(eog_data[eog_channel_right], 5, 2)
+            #labels
+            eog_data_filtered_left = eog_data[eog_channel_left]
+            eog_data_filtered_right = eog_data[eog_channel_right]
+            eog_class = "neutral"
+            max_threshold = 150
+            min_threshold = 120
+            max_left = np.max(eog_data_filtered_left)
+            min_left = np.min(eog_data_filtered_left)
+            max_right = np.max(eog_data_filtered_right)
+            min_right = np.min(eog_data_filtered_right)
+            if max_right < 450 and max_left < 450: # to stop wild values
+                if max_right > max_threshold and min_left < -min_threshold:
                     eog_class = "right"
+                if max_right - 50 < max_left:
+                elif max_left > max_threshold-50 and min_left < 50-min_threshold:
+                    eog_class = "left"
 
+            print("EOG Class:", eog_class)
 
-            # eog_data = board.get_current_board_data(250)
-            # data = np.array(eog_data[eog_channel_left])
-            # DataFilter.detrend(eog_data[eog_channel_left], DetrendOperations.LINEAR.value)
-            # DataFilter.detrend(eog_data[eog_channel_right], DetrendOperations.LINEAR.value)
-            # mean_value_left = np.mean(eog_data[eog_channel_left])
-            # mean_value_right = np.mean(eog_data[eog_channel_right])
-            # time_counter += 1
+            # IF statements searching for LR signal
+            #T_count +=1
+            #if eog_class == "left"
+             #   L_count += 1
+              #  N_count = 0
+            #if eog_class == "neutral"
+             #   N_count += 1
+            #if L_count = 0 and eog_class == "right"
+             #   N_count += 1
+            #if N_count == 3 #error threshold so if there are 3 missed turns it resets
+             #   L_count = 0
 
-            # LR = 'none'
-            # if mean_EOG == 0 or time_counter < 5:
-            #     mean_EOG = mean_value_left
-
-            # if time_counter >10:
-            #     if mean_value_left < (mean_EOG - 0.5):
-            #         LR = "Right"
-            #     elif mean_value_left > (mean_EOG + 0.5):
-            #         LR = "Left"
-            # eog_class = LR
-
-
+            #if L_count == 1 and eog_class == "right"
+             #   LR_count += 1
+             #   L_count = 0
+            #if LR_count == 2 # number of LR signals you would like to receive
+             #    print("LR signal received !!!")
+            #if T_count = 16 # period of eogclasses we would like to store
+             #   LR_count = 0
+              #  T_count = 0
 
             #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
             
