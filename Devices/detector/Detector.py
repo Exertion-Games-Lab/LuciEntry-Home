@@ -221,8 +221,8 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                 if max_right > max_threshold and min_left < -min_threshold:
                     eog_class = "right"
                 if max_right - 50 < max_left:
-                elif max_left > max_threshold-50 and min_left < 50-min_threshold:
-                    eog_class = "left"
+                    elif max_left > max_threshold-50 and min_left < 50-min_threshold:
+                        eog_class = "left"
 
             print("EOG Class:", eog_class)
 
