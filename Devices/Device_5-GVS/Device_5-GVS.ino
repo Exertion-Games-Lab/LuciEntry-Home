@@ -180,7 +180,9 @@ Command fetchNextCommand(){
 
     if (httpResponseCode == 200) {
         String payload = http.getString();
+        Serial.println(payload);
         command = jsonObjectToCommand(payload);
+        command.currentInstructionNum = 0;
     } else {
         Serial.print("Failed to get: ");
         Serial.println(httpResponseCode);
@@ -204,9 +206,9 @@ Command jsonObjectToCommand(String payload) {
     Command command;
     command.name = doc["command"]["name"].as<String>();
     JsonArray jsonInstructions = doc["command"]["instructions"].as<JsonArray>();
+    command.instructions = new Instruction[jsonInstructions.size()];
     command.noOfInstructions = jsonInstructions.size();
-    command.instructions = new Instruction[command.noOfInstructions];
-    command.currentInstructionNum=0;
+    
     Serial.println("Command: " + command.name);
     Serial.println("no of instructions: ");
     Serial.println(command.noOfInstructions);
@@ -232,12 +234,14 @@ void executeCommand(){
 void executeInstruction(Instruction instruction){
     switch (instruction.code){
         case StartTACS:
+            Serial.println(String(instruction.payload["intensity"].as<int>()));
             Turn(true, instruction.payload["intensity"]);
             break;
         case StopTACS:
             Turn(false, 0);
             break;
         case Wait:
+            Serial.println(String(instruction.payload["millis"].as<int>()));
             ChangeGVSDirection(instruction.payload["millis"]);
             break;
         default:
