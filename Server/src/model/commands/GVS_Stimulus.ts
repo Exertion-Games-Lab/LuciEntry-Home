@@ -6,47 +6,52 @@ import Wait from "../instructions/Wait";
 
 class GVS_Stimulation extends Command {
 
-    private millis: number;
-    private intensity: number;
+    public millis?: number;
+    public intensity?: number;
 
-    public constructor(millis: number = 10000, intensity: number = 255){
+    public constructor(millis?: number, intensity?: number){
+
         super(CommandName.GVS_STIMULATION, []);
+        
+        this.generateInstructions(millis, intensity);
         this.millis = millis;
         this.intensity = intensity;
-        this.generateInstructions();
     }
 
-    public clone(): Command {
-        return new GVS_Stimulation(this.millis);
-    }
+    public generateInstructions(millis?: number, intensity?: number){
+        const instructions = [];
 
-    public generateInstructions(){
-        this.instructions = [
-            new StartTACS(this.intensity),
-            new Wait(this.millis),
-            new StopTACS()
-        ]
+        instructions.push(new StartTACS(intensity || 100));
+        instructions.push(new Wait(millis || 10000));
+        instructions.push(new StopTACS());
+
+        this.instructions = instructions;
     }
 
     public setPayload(payload: any): void {
-        if (typeof payload === "object"){
-            if ('millis' in payload){
-                if (typeof payload.millis === "number"){
-                    this.millis = payload.millis;
-                }else{
-                    console.error("Millis must be of type number")
-                }
+        if (typeof payload !== "object") return;
+
+        if ('millis' in payload){
+            if (typeof payload.millis === "number"){
+                this.millis = payload.millis;
+            } else {
+                console.error("Brightness must be of type number")
             }
         }
+
         if ('intensity' in payload){
             if (typeof payload.intensity === "number"){
                 this.intensity = payload.intensity;
             } else {
-                console.error("intensity must be of type number")
+                console.error("Brightness must be of type number")
             }
         }
 
         this.generateInstructions();
+    }
+
+    public clone(): GVS_Stimulation {
+        return new GVS_Stimulation(this.millis, this.intensity);
     }
 
 }
