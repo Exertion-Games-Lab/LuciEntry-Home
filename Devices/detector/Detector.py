@@ -98,38 +98,22 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
     board.prepare_session()
     board.start_stream()
 
-
-
-    # this part sets the baseline for classification of LR signal
-    # i dont know why but it works better if you do this twice lol 
-    time.sleep(1)
-    eog_data = board.get_current_board_data(250)
-    DataFilter.detrend(eog_data[eog_channel], DetrendOperations.LINEAR.value)
-    eog_baseline_mean = np.mean(eog_data[eog_channel])
-    eog_baseline_std = np.std(eog_data[eog_channel])
-
-    time.sleep(1)
-    eog_data = board.get_current_board_data(250)
-    DataFilter.detrend(eog_data[eog_channel], DetrendOperations.LINEAR.value)
-    eog_baseline_mean = np.mean(eog_data[eog_channel])
-    eog_baseline_std = np.std(eog_data[eog_channel])
-
-
     # mean_EOG = 0
     # time_counter = 0
 
-    participant_name = "Cosmos"
-    sleep_data_file_name = date.today().strftime("%d_%m_%Y") + '_'+ participant_name + '_log.txt'
-
-    #reconnected counter
-    timeoutCnt = 0
-    TIMEOUT_THRESHOLD = 601
-    
     # LR signal counters
     N_count = 0
     L_count = 0
     LR_count = 0
     T_count = 0
+
+    # participant and save file data
+    participant_name = "Cosmos"
+    sleep_data_file_name = date.today().strftime("%d_%m_%Y") + '_'+ participant_name + '_log.txt'
+
+    #reconnected counter
+    timeoutCnt = 0
+    TIMEOUT_THRESHOLD = 1901
 
     #calculate REM every TIME_WINDOW
     TIME_WINDOW = 120
@@ -203,8 +187,8 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             # Applying filters to channels
             DataFilter.detrend(eog_data[eog_channel_left], DetrendOperations.LINEAR.value)
             DataFilter.detrend(eog_data[eog_channel_right], DetrendOperations.LINEAR.value)
-            DataFilter.perform_bandpass(eog_data[eog_channel_left], 250, 0.5, 7, 4, FilterTypes.BUTTERWORTH.value, 0)
-            DataFilter.perform_bandpass(eog_data[eog_channel_right], 250, 0.5, 7, 4, FilterTypes.BUTTERWORTH.value, 0)
+            DataFilter.perform_bandpass(eog_data[eog_channel_left], 250, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+            DataFilter.perform_bandpass(eog_data[eog_channel_right], 250, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
             DataFilter.perform_rolling_filter(eog_data[eog_channel_left], 5, 2)  # Use '2' for moving
             DataFilter.perform_rolling_filter(eog_data[eog_channel_right], 5, 2)
             #labels
@@ -218,10 +202,10 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             max_right = np.max(eog_data_filtered_right)
             min_right = np.min(eog_data_filtered_right)
             if max_right < 450 and max_left < 450: # to stop wild values
-                if max_right > max_threshold and min_left < -min_threshold:
+                if max_right > max_threshold and min_left < 30-min_threshold:
                     eog_class = "right"
                 if max_right - 50 < max_left:
-                    elif max_left > max_threshold-50 and min_left < 50-min_threshold:
+                     if max_left > max_threshold-50 and min_right < 30-min_threshold:
                         eog_class = "left"
 
             print("EOG Class:", eog_class)
