@@ -3,7 +3,7 @@ from datetime import date
 import time
 import numpy as np 
 import pickle
-
+from flask import Flask, jsonify, request
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes
 
@@ -11,6 +11,9 @@ import os
 
 class Parameter(object):
     pass
+
+# A global variable to store the REM state
+rem_state = {}
 
 #command parameters are the wrokaround for us to communicate with the code: CommandSender
 def detection(commandParameters=[], board_name = "SYNTHETIC"):
@@ -243,9 +246,9 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             sleep_stage_list.append(sleep_stage)
 
             if REM_cnt >= TIME_WINDOW * accepted_REM_percentage:
-                sleep_stage_with_period = "REM_PEROID"
+                sleep_stage_with_period = "REM_PERIOD"
             else:
-                sleep_stage_with_period = "Not_REM_PEROID"
+                sleep_stage_with_period = "Not_REM_PERIOD"
 
 
 
@@ -259,14 +262,33 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
         if commandParameters.induction==False:
             # message += "sleep stage: "+ sleep_stage + ", EOG Class: "+str(eog_class)+ '\n'   
             message += "sleep stage: "+ sleep_stage + ", Period result: "+ sleep_stage_with_period + '\n'  
+             # Store/update REM state in the global variable
+            global rem_state
+            rem_state = {'state': sleep_stage_with_period}  
         else:
             message += "EOG Class: " + str(eog_class) +'\n'   
         f = open(sleep_data_file_name, "a")
         f.write(message)
         f.close()
         print(message)
+# Flask app setup
+app = Flask(__name__)
+
+@app.route('/update_rem', methods=['POST'])
+def update_rem():
+    global rem_state
+    rem_state = request.json
+    return jsonify({"message": "REM state updated"}), 200
+
+@app.route('/get_rem', methods=['GET'])
+def get_rem():
+    return jsonify(rem_state), 200
 
 def main():
+    from threading import Thread
+    flask_thread = Thread(target=lambda: app.run(debug=True, use_reloader=False))
+    flask_thread.start()
+
     commandParameters = Parameter()
     commandParameters.isInterrupt = False
     commandParameters.induction = False
