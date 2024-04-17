@@ -286,7 +286,7 @@ def get_rem():
 
 def main():
     from threading import Thread
-    flask_thread = Thread(target=lambda: app.run(debug=True, use_reloader=False))
+    flask_thread = Thread(target=lambda: app.run(host='0.0.0.0',port = '5050', debug=True, use_reloader=False))
     flask_thread.start()
 
     commandParameters = Parameter()
