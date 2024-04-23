@@ -10,7 +10,6 @@ class GVS_Stimulation extends Command {
     public intensity?: number;
 
     public constructor(millis?: number, intensity?: number){
-
         super(CommandName.GVS_STIMULATION, []);
         
         this.generateInstructions(millis, intensity);
@@ -20,7 +19,6 @@ class GVS_Stimulation extends Command {
 
     public generateInstructions(millis?: number, intensity?: number){
         const instructions = [];
-
         instructions.push(new StartTACS(intensity || 100));
         instructions.push(new Wait(millis || 10000));
         instructions.push(new StopTACS());
@@ -47,7 +45,7 @@ class GVS_Stimulation extends Command {
             }
         }
 
-        this.generateInstructions();
+        this.generateInstructions(this.millis,this.intensity);
     }
 
     public clone(): GVS_Stimulation {
