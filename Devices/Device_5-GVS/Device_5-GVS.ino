@@ -19,13 +19,12 @@ const int Relay = 5;
 bool emergencyState = false;
 bool connected = false;
 int ID = 5; 
-#define ChangeGVSDirectionInterval 500
 #define GVSHZ 40
 
 // WIFI Details
 const char* SSID = "ORBI80";
 const char* PASSWORD = "classychair864";
-const String IP_ADDRESS = "192.168.1.46";
+const String IP_ADDRESS = "192.168.1.41";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 // enums 
@@ -47,7 +46,7 @@ enum InstructionCodes {
 // structs
 struct Instruction {
     int code;
-    JsonObject payload;
+    DynamicJsonDocument  *payload;
 };
 
 struct Command {
@@ -58,8 +57,7 @@ struct Command {
 };
 // empty command
 Command EmptyCommand;
-Command currentCommand;
-
+Command* currentCommandPointer;
 void setup() {
     // Serial Monitor Startup
     Serial.begin(9600);
@@ -104,8 +102,8 @@ void loop() {
     if (!emergencyState){
       digitalWrite(LEDEmergency, LOW);
       digitalWrite(Relay, LOW);
-      if (currentCommand.noOfInstructions == 0){
-        currentCommand = fetchNextCommand();
+      if (currentCommandPointer == nullptr || currentCommandPointer->noOfInstructions == 0){
+        currentCommandPointer = fetchNextCommand();
       }
       else{
         executeCommand();
@@ -113,7 +111,7 @@ void loop() {
     } else {
       digitalWrite(LEDEmergency, HIGH);
       digitalWrite(Relay, HIGH);
-      currentCommand = EmptyCommand;
+      currentCommandPointer = &EmptyCommand;
     }
 
 }
@@ -143,26 +141,28 @@ void connect(){
     Serial.println("Connected!");
 }
 
-Command fetchNextCommand(){
+Command* fetchNextCommand(){
   static unsigned long waitStartTime = 0;
   static unsigned long waitDuration = 0;
 
-  if (waitDuration == 0){
+  if (waitDuration == 0)
+  {
     waitStartTime = millis();
     waitDuration = 2000;
   } 
   else
   {
     unsigned long elapsedTime = millis() - waitStartTime;
-    if (elapsedTime < waitDuration){
-      return EmptyCommand;
+    if (elapsedTime < waitDuration)
+    {
+      return &EmptyCommand;
     }
     else
     {
       waitDuration = 0;
     } 
   }  
-    Command command = EmptyCommand;
+    Command* commandptr = &EmptyCommand;
 
     Serial.println("Making http request for next command\n");
 
@@ -180,9 +180,8 @@ Command fetchNextCommand(){
 
     if (httpResponseCode == 200) {
         String payload = http.getString();
-        Serial.println(payload);
-        command = jsonObjectToCommand(payload);
-        command.currentInstructionNum = 0;
+        commandptr = jsonObjectToCommand(payload);
+        commandptr->currentInstructionNum = 0;
     } else {
         Serial.print("Failed to get: ");
         Serial.println(httpResponseCode);
@@ -190,59 +189,72 @@ Command fetchNextCommand(){
     // Free resources
     http.end();
 
-    return command;
+    return commandptr;
 }
 
-Command jsonObjectToCommand(String payload) {
+Command* jsonObjectToCommand(String payload) {
     DynamicJsonDocument doc(5200);
     DeserializationError error = deserializeJson(doc, payload);
 
     if (error) {
       Serial.println("Failed to read command");
       Serial.println(error.c_str());
-      return EmptyCommand;
+      return &EmptyCommand;
     }
 
-    Command command;
-    command.name = doc["command"]["name"].as<String>();
+    Command* commandptr = new Command;
+    commandptr->name = doc["command"]["name"].as<String>();
     JsonArray jsonInstructions = doc["command"]["instructions"].as<JsonArray>();
-    command.instructions = new Instruction[jsonInstructions.size()];
-    command.noOfInstructions = jsonInstructions.size();
+    commandptr->instructions = new Instruction[jsonInstructions.size()];
+    commandptr->noOfInstructions = jsonInstructions.size();
     
-    Serial.println("Command: " + command.name);
-    Serial.println("no of instructions: ");
-    Serial.println(command.noOfInstructions);
+    Serial.println("Command: " + commandptr->name);
     int i = 0;
     for (JsonObject jsonInstruction : jsonInstructions) {
-      command.instructions[i].code = jsonInstruction["code"].as<int>();
-      command.instructions[i].payload = jsonInstruction["payload"].as<JsonObject>();
+      commandptr->instructions[i].code = jsonInstruction["code"].as<int>();
+
+      //deep copy Json object
+      commandptr->instructions[i].payload = new DynamicJsonDocument(1024) ;
+      String serialized;
+      serializeJson(jsonInstruction["payload"].as<JsonObject>(), serialized);
+      // Deserialize the serialized string into the destination JsonObject
+      DeserializationError error = deserializeJson(*(commandptr->instructions[i].payload), serialized);
+      if (error) {
+        Serial.print("Failed to parse JSON: ");
+        Serial.println(error.c_str());
+      }
       i++;
     }
-
-    return command;
+    
+    return commandptr;
 }
 
 void executeCommand(){
-    if (currentCommand.currentInstructionNum < currentCommand.noOfInstructions) {
-        executeInstruction(currentCommand.instructions[currentCommand.currentInstructionNum]);
+    if (currentCommandPointer->currentInstructionNum < currentCommandPointer->noOfInstructions) {
+        executeInstruction(currentCommandPointer->instructions[currentCommandPointer->currentInstructionNum]);
     } else {
         // Command finished, release the command
-        currentCommand = EmptyCommand;
+        for (int i =0; i<currentCommandPointer->noOfInstructions;i++)
+        {
+          delete currentCommandPointer->instructions[i].payload;
+        }
+        delete[] currentCommandPointer->instructions;
+        delete currentCommandPointer;
+
+        currentCommandPointer = &EmptyCommand;
     }
 }
 
 void executeInstruction(Instruction instruction){
     switch (instruction.code){
         case StartTACS:
-            Serial.println(String(instruction.payload["intensity"].as<int>()));
-            Turn(true, instruction.payload["intensity"]);
+            Turn(true, (*instruction.payload)["intensity"].as<int>());
             break;
         case StopTACS:
             Turn(false, 0);
             break;
         case Wait:
-            Serial.println(String(instruction.payload["millis"].as<int>()));
-            ChangeGVSDirection(instruction.payload["millis"]);
+            ChangeGVSDirection((*instruction.payload)["millis"].as<int>());
             break;
         default:
             Serial.println("Instruction code does not exist");
@@ -253,15 +265,17 @@ void ChangeGVSDirection(int time)
 {
   static unsigned long waitStartTime = 0;
   static unsigned long waitDuration = 0;
-
+  //Serial.println("time");
+  //Serial.println(time);
   if (waitDuration == 0){
     waitStartTime = millis();
     waitDuration = time;
   } else{
     unsigned long elapsedTime = millis() - waitStartTime;
+    
     if (elapsedTime >= waitDuration){
       waitDuration = 0;
-      currentCommand.currentInstructionNum++;
+      currentCommandPointer->currentInstructionNum++;
     }
     else{
       elapsedTime = millis() - waitStartTime;
@@ -269,12 +283,12 @@ void ChangeGVSDirection(int time)
       if (currentGVSNum%2 == 0){
         digitalWrite(IN1, HIGH);
         digitalWrite(IN2, LOW);
-        Serial.println("CW");
+        //Serial.println("CW");
       }
       else{
         digitalWrite(IN1, LOW);
         digitalWrite(IN2, HIGH);
-        Serial.println("CCW");
+        //Serial.println("CCW");
       }
     }
   }
@@ -284,7 +298,8 @@ void Turn(bool active, int intensity)
 {
   if(active)
   {
-    analogWrite(PWMControl, intensity);
+    // analogWrite(PWMControl, intensity);
+    analogWrite(PWMControl, 255);
     Serial.println("Turn on, Intensity = " + String(intensity));
   }
   else
@@ -292,7 +307,7 @@ void Turn(bool active, int intensity)
     analogWrite(PWMControl, 0);
     Serial.println("Turn off");
   }
-  currentCommand.currentInstructionNum++; // Move to the next instruction
+  currentCommandPointer->currentInstructionNum++; // Move to the next instruction
 }
 
 bool fetchEmergencyState() {
