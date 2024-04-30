@@ -24,9 +24,9 @@ int ID = 2;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // WIFI Details
-const char* SSID = "The boss";
-const char* PASSWORD = "37a472adae";
-const String IP_ADDRESS = "192.168.1.118";
+const char* SSID = "ORBI80";
+const char* PASSWORD = "classychair864";
+const String IP_ADDRESS = "192.168.1.41";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 // Enums
@@ -39,7 +39,7 @@ enum InstructionCodes {
 // Structs
 struct Instruction {
     int code;
-    JsonObject payload;
+    DynamicJsonDocument  *payload;
 };
 
 struct Command {
@@ -51,7 +51,7 @@ struct Command {
 };
 
 // Empty command
-Command currentCommand;
+Command* currentCommandPointer;
 Command EmptyCommand;
 
 void setup() {
@@ -90,8 +90,8 @@ void loop() {
     if (!emergencyState) {
       digitalWrite(LEDEmergency, LOW);
       digitalWrite(Relay, LOW);
-      if(currentCommand.noOfInstructions == 0){
-        currentCommand = fetchNextCommand();
+      if(currentCommandPointer == nullptr || currentCommandPointer->noOfInstructions == 0){
+        currentCommandPointer = fetchNextCommand();
       }
       else{
         executeCommand();
@@ -99,7 +99,7 @@ void loop() {
     } else {
         digitalWrite(LEDEmergency, HIGH);
         digitalWrite(Relay, HIGH);
-        currentCommand = EmptyCommand;
+        currentCommandPointer = &EmptyCommand;
     }
     
     //delay(2000);
@@ -119,7 +119,7 @@ void connect() {
     Serial.println("Connected!");
 }
 
-Command fetchNextCommand() {
+Command* fetchNextCommand() {
   static unsigned long waitStartTime = 0;
   static unsigned long waitDuration = 0;
 
@@ -131,7 +131,7 @@ Command fetchNextCommand() {
   {
     unsigned long elapsedTime = millis() - waitStartTime;
     if (elapsedTime < waitDuration){
-      return EmptyCommand;
+      return &EmptyCommand;
     }
     else
     {
@@ -139,7 +139,7 @@ Command fetchNextCommand() {
     } 
   }  
 
-    Command command = EmptyCommand;
+    Command* commandptr = &EmptyCommand;
 
     Serial.println("Making http request for next command\n");
 
@@ -157,8 +157,8 @@ Command fetchNextCommand() {
 
     if (httpResponseCode == 200) {
         String payload = http.getString();
-        command = jsonObjectToCommand(payload);
-        command.currentInstructionNum = 0; // Initialize current instruction number
+        commandptr = jsonObjectToCommand(payload);
+        commandptr->currentInstructionNum = 0; // Initialize current instruction number
     } else {
         Serial.print("Failed to get command: ");
         Serial.println(httpResponseCode);
@@ -166,56 +166,73 @@ Command fetchNextCommand() {
     // Free resources
     http.end();
 
-    return command;
+    return commandptr;
 }
 
-Command jsonObjectToCommand(String payload) {
+Command* jsonObjectToCommand(String payload) {
     DynamicJsonDocument doc(5200);
     DeserializationError error = deserializeJson(doc, payload);
 
     if (error) {
         Serial.println("Failed to read command");
         Serial.println(error.c_str());
-        return EmptyCommand;
+        return &EmptyCommand;
     }
 
-    Command command;
-    command.name = doc["command"]["name"].as<String>();
+    Command* commandptr = new Command;
+    commandptr->name = doc["command"]["name"].as<String>();
     JsonArray jsonInstructions = doc["command"]["instructions"].as<JsonArray>();
-    command.instructions = new Instruction[jsonInstructions.size()];
-    command.noOfInstructions = jsonInstructions.size();
+    commandptr->instructions = new Instruction[jsonInstructions.size()];
+    commandptr->noOfInstructions = jsonInstructions.size();
 
-    Serial.println("Command: " + command.name);
+    Serial.println("Command: " + commandptr->name);
 
     int i = 0;
     for (JsonObject jsonInstruction : jsonInstructions) {
-        command.instructions[i].code = jsonInstruction["code"].as<int>();
-        command.instructions[i].payload = jsonInstruction["payload"].as<JsonObject>();
+        commandptr->instructions[i].code = jsonInstruction["code"].as<int>();
+        //deep copy Json object
+        commandptr->instructions[i].payload = new DynamicJsonDocument(102400) ;
+        String serialized;
+        serializeJson(jsonInstruction["payload"].as<JsonObject>(), serialized);
+        // Deserialize the serialized string into the destination JsonObject
+        DeserializationError error = deserializeJson(*(commandptr->instructions[i].payload), serialized);
+        if (error) 
+        {
+          Serial.print("Failed to parse JSON: ");
+          Serial.println(error.c_str());
+        }
         i++;
     }
 
-    return command;
+    return commandptr;
 }
 
 void executeCommand() {
-    if (currentCommand.currentInstructionNum < currentCommand.noOfInstructions) {
-        executeInstruction(currentCommand.instructions[currentCommand.currentInstructionNum]);
+    if (currentCommandPointer->currentInstructionNum < currentCommandPointer->noOfInstructions) {
+        executeInstruction(currentCommandPointer->instructions[currentCommandPointer->currentInstructionNum]);
     } else {
         // Command finished, release the command
-        currentCommand = EmptyCommand;
+        for (int i =0; i<currentCommandPointer->noOfInstructions;i++)
+        {
+          delete currentCommandPointer->instructions[i].payload;
+        }
+        delete[] currentCommandPointer->instructions;
+        delete currentCommandPointer;
+
+        currentCommandPointer = &EmptyCommand;
     }
 }
 
 void executeInstruction(Instruction instruction) {
     switch (instruction.code) {
         case TurnOnLED:
-            turnOnLED(instruction.payload["brightness"].as<int>(), instruction.payload["colour"]["r"].as<int>(), instruction.payload["colour"]["g"].as<int>(), instruction.payload["colour"]["b"].as<int>());
+            turnOnLED((*instruction.payload)["brightness"].as<int>(), (*instruction.payload)["colour"]["r"].as<int>(), (*instruction.payload)["colour"]["g"].as<int>(), (*instruction.payload)["colour"]["b"].as<int>());
             break;
         case TurnOffLED:
             turnOffLED();
             break;
         case Wait:
-            wait(instruction.payload["millis"]);
+            wait((*instruction.payload)["millis"].as<int>());
             break;
         default:
             Serial.println("Instruction code does not exist");
@@ -230,14 +247,14 @@ void turnOnLED(int brightness, int red, int green, int blue) {
         strip.setPixelColor(i, strip.Color(red, green, blue));   // Set pixel's color (in RAM)
     }
     strip.show();  
-    currentCommand.currentInstructionNum++; //remember to add the number after the completion of the instruction 
+    currentCommandPointer->currentInstructionNum++; //remember to add the number after the completion of the instruction 
 }
 
 void turnOffLED() {
     Serial.println("Turn off led");
     strip.clear();
     strip.show();
-    currentCommand.currentInstructionNum++; //remember to add the number after the completion of the instruction 
+    currentCommandPointer->currentInstructionNum++; //remember to add the number after the completion of the instruction 
 }
 
 // Function to wait for a specified duration without blocking the loop
@@ -257,7 +274,7 @@ void wait(unsigned long time) {
         if (elapsedTime >= waitDuration) {
             // Finish waiting
             waitDuration = 0;
-            currentCommand.currentInstructionNum++; // Move to the next instruction
+            currentCommandPointer->currentInstructionNum++; // Move to the next instruction
         }
     }
 }
