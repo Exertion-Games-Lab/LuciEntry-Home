@@ -9,7 +9,7 @@ from mne import create_info
 from mne.io import RawArray
 from flask import Flask, jsonify, request
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
-from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes. AggOperations
+from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes, AggOperations
 
 import os
 
@@ -228,24 +228,24 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
 
             print("EOG Class:", eog_class)
 
-            IF statements searching for LR signal
+            #IF statements searching for LR signal
             T_count +=1
-            if eog_class == "left"
+            if eog_class == "left":
                L_count += 1
                N_count = 0
-            if eog_class == "neutral"
+            if eog_class == "neutral":
                N_count += 1
-            if L_count = 0 and eog_class == "right"
+            if L_count = 0 and eog_class == "right":
                N_count += 1
-            if N_count == 15 #error threshold so if there are 3 missed turns it resets
+            if N_count == 15: #error threshold so if there are 3 missed turns it resets
                L_count = 0
 
-            if L_count == 1 and eog_class == "right"
+            if L_count == 1 and eog_class == "right":
                LR_count += 1
                L_count = 0
-            if LR_count == 4 # number of LR signals you would like to receive
+            if LR_count == 4: # number of LR signals you would like to receive
                 print("LR signal received !!!")
-            if T_count = 70 # period of eogclasses we would like to store
+            if T_count == 70: # period of eogclasses we would like to store
                LR_count = 0
                T_count = 0
 
