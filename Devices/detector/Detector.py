@@ -235,7 +235,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                N_count = 0
             if eog_class == "neutral":
                N_count += 1
-            if L_count = 0 and eog_class == "right":
+            if L_count == 0 and eog_class == "right":
                N_count += 1
             if N_count == 15: #error threshold so if there are 3 missed turns it resets
                L_count = 0
