@@ -73,6 +73,7 @@ void setup() {
 
     // Turn on Power indicator LED to indicate power on
     digitalWrite(LEDPower, HIGH);
+    EmptyCommand.name = "EmptyCommand";
 }
 
 void loop() {
@@ -141,7 +142,7 @@ Command* fetchNextCommand() {
 
     Command* commandptr = &EmptyCommand;
 
-    Serial.println("Making http request for next command\n");
+    Serial.println("Making http request for next command");
 
     WiFiClient client;
     HTTPClient http;
@@ -178,7 +179,13 @@ Command* jsonObjectToCommand(String payload) {
         Serial.println(error.c_str());
         return &EmptyCommand;
     }
-
+    
+    if (doc["command"]["name"].as<String>()=="null")
+    {
+      //empty command, ignore
+      return &EmptyCommand;
+    }
+    
     Command* commandptr = new Command;
     commandptr->name = doc["command"]["name"].as<String>();
     JsonArray jsonInstructions = doc["command"]["instructions"].as<JsonArray>();
@@ -191,7 +198,7 @@ Command* jsonObjectToCommand(String payload) {
     for (JsonObject jsonInstruction : jsonInstructions) {
         commandptr->instructions[i].code = jsonInstruction["code"].as<int>();
         //deep copy Json object
-        commandptr->instructions[i].payload = new DynamicJsonDocument(102400) ;
+        commandptr->instructions[i].payload = new DynamicJsonDocument(700) ;
         String serialized;
         serializeJson(jsonInstruction["payload"].as<JsonObject>(), serialized);
         // Deserialize the serialized string into the destination JsonObject

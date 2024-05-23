@@ -84,7 +84,7 @@ void setup() {
 
     // Turn on Power indicator LED to indicate power on
     digitalWrite(LEDPower, HIGH);
-
+    EmptyCommand.name = "EmptyCommand";
 }
 
 void loop() {
@@ -164,7 +164,7 @@ Command* fetchNextCommand(){
   }  
     Command* commandptr = &EmptyCommand;
 
-    Serial.println("Making http request for next command\n");
+    Serial.println("Making http request for next command");
 
     WiFiClient client;
     HTTPClient http;
@@ -199,6 +199,12 @@ Command* jsonObjectToCommand(String payload) {
     if (error) {
       Serial.println("Failed to read command");
       Serial.println(error.c_str());
+      return &EmptyCommand;
+    }
+
+    if (doc["command"]["name"].as<String>()=="null")
+    {
+      //empty command, ignore
       return &EmptyCommand;
     }
 
