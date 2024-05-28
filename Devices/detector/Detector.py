@@ -245,6 +245,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                L_count = 0
             if LR_count == 4: # number of LR signals you would like to receive
                 print("LR signal received !!!")
+                # put global variable saying LR signal confirmed
             if T_count == 70: # period of eogclasses we would like to store
                LR_count = 0
                T_count = 0
