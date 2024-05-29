@@ -32,7 +32,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
         # Synthetic for generating fake data, cyton for using the actual real board
         board_id = BoardIds.SYNTHETIC_BOARD.value
     elif board_name =="OPEN_BCI":
-        params.serial_port = "COM3" #WINDOWS
+        params.serial_port = "COM9" #WINDOWS
         #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
         # params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
         board_id = BoardIds.CYTON_BOARD.value
@@ -143,14 +143,27 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
         
         if timeoutCnt>=TIMEOUT_THRESHOLD: #the board lost connection or something, restart it
             timeoutCnt=0
-            print("restart...")
-            #release the session first and restart
-            if board.is_prepared():
-                board.release_session()
-            time.sleep(1)
-            #restart
-            board.prepare_session()
-            board.start_stream()
+            print("time up. reconnect...")
+            board.release_session()
+            time.sleep(1) ## wait for a bit 
+            while board.is_prepared()==False:
+                print("trying to connect to board...")
+                try:
+                    board.prepare_session()
+                    board.start_stream()
+                except:
+                    print("reconnection failed. Try again...")
+                    time.sleep(1) ## wait for a bit 
+            print("reconnection finished")
+
+        
+            # #release the session first and restart
+            # if board.is_prepared():
+            #     board.release_session()
+            # time.sleep(1)
+            # #restart
+            # board.prepare_session()
+            # board.start_stream()
 
 
         if board.get_board_data_count() > 8999: #if there is enough samples to calculate sleep stage (3000 samples needed), classify sleep
