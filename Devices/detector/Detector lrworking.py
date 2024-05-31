@@ -273,7 +273,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
 
 
 
-        commandParameters.sleep_stage = sleep_stage_with_period
+        commandParameters.sleep_stage = sleep_stage_with_period # aaaaaaa
         commandParameters.eog_class = eog_class_3
         t = time.asctime()
         # t = time.localtime()
