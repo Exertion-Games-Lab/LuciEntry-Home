@@ -244,7 +244,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             #IF statements searching for LR signal
             T_count +=1
             if eog_class == "left":
-               L_count += 1
+               L_count = 1
                N_count = 0
             if eog_class == "neutral":
                N_count += 1
