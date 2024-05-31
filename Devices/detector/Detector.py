@@ -32,7 +32,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
         # Synthetic for generating fake data, cyton for using the actual real board
         board_id = BoardIds.SYNTHETIC_BOARD.value
     elif board_name =="OPEN_BCI":
-        params.serial_port = "COM9" #WINDOWS
+        params.serial_port = "COM4" #WINDOWS
         #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
         # params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
         board_id = BoardIds.CYTON_BOARD.value
@@ -86,6 +86,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
 
 
     sleep_stage = 'Awake'
+    Yasa_sleep_stage = 'Awake'
 
     sampling_rate = BoardShim.get_sampling_rate(board_id)
     nfft = DataFilter.get_nearest_power_of_two(sampling_rate)
@@ -115,7 +116,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
     T_count = 0
 
     # yasa counter
-    yasa_data = np.ndarray(0)
+    yasa_data_eeg = np.ndarray(0)
     
     # participant and save file data
     participant_name = "Cosmos"
@@ -131,10 +132,13 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
     accepted_REM_percentage = 0.6
     #list of sleep stage within last TIME_PERIOD
     sleep_stage_list = ["NaN"]* TIME_WINDOW
+    Yasa_sleep_stage_list = ["NaN"]* TIME_WINDOW
     #how many REM are in the list
     REM_cnt = 0
+    Yasa_REM_cnt = 0
     #final result
     sleep_stage_with_period = "NaN"
+    Yasa_sleep_stage_with_period = "NaN"
 
 
 
@@ -171,7 +175,8 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             # pull new data from the buffer
             eeg_data = board.get_board_data()
 
-            # process data
+            # process data of nathan's model
+
             # this peforms some denoising to the data and peforms a spectral analysis to get power spectal density (psd)
             DataFilter.perform_downsampling(eeg_data[eeg_channel], 3, AggOperations.MEDIAN.value)
             DataFilter.detrend(eeg_data[eeg_channel], DetrendOperations.LINEAR.value)
@@ -197,15 +202,36 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             if sleep_stage_class == 4.0:
                 sleep_stage = "REM"
 
+            # processing yasa model
+            yasa_data_eeg  = np.concatenate((yasa_data_eeg, eeg_data[eeg_channel]))
+            # add eog later yasa_data_eog  = np.concatenate((yasa_data_eog, eeg_data[eog_channel_left]))
+            print("yasa length:",len(yasa_data_eeg))
+            if len(yasa_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
+                print("length enough")
+                info = create_info(ch_names=["EEG"],sfreq = sampling_rate, ch_types = ["eeg"])
+                yasa_data_eeg = yasa_data_eeg.reshape(1,-1)
+                raw = RawArray(yasa_data_eeg, info)
+                Yasa_stage = yasa.SleepStaging(raw ,eeg_name='EEG').predict()
+                print("yasa stage:",Yasa_stage)
+                # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
+                print("First sleep stage:", Yasa_stage[0])
 
+                if Yasa_stage[0] == 'W':
+                    Yasa_sleep_stage = 'Awake'
+                if Yasa_stage[0] == 'N2' or Yasa_stage[0] == 'N3'or Yasa_stage[0] == 'N1':
+                    Yasa_sleep_stage = "NREM"
+                if Yasa_stage[0] == 'R':
+                    Yasa_sleep_stage = "REM"
+                print("Yasa sleep stage: " , Yasa_sleep_stage)
+                yasa_data_eeg = np.ndarray(0)
             
 
 
 
 
 
-        else: # else, just keep updating eog stuff
-            time.sleep(0.2)
+        else: # EOG read for LR detection
+            time.sleep(0.3)
             if board.get_board_data_count() < 150:
                 continue
             timeoutCnt+=1
@@ -233,7 +259,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             min_right_id = np.argmin(eog_data[eog_channel_right])
             
             if max_right < 500 and max_left < 500:
-                if abs(max_right_id - min_left_id) < 10 or abs(max_left_id - min_right_id) < 10:
+                if abs(max_right_id - min_left_id) < 20 or abs(max_left_id - min_right_id) < 20:
                     if max_left_id < max_right_id and min_left_id > min_right_id:
                         eog_class = "right"
                     if max_left_id > max_right_id and min_left_id < min_right_id:
@@ -252,7 +278,6 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                N_count += 1
             if N_count == 15: #error threshold so if there are 3 missed turns it resets
                L_count = 0
-
             if L_count == 1 and eog_class == "right":
                LR_count += 1
                L_count = 0
@@ -264,7 +289,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                T_count = 0
 
             #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
-            
+            #nathan's model
             #pop out the first element
             if sleep_stage_list[0] == "REM":
                 REM_cnt-=1
@@ -279,6 +304,23 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             else:
                 sleep_stage_with_period = "Not_REM_PERIOD"
 
+            # yasa model
+            #pop out the first element
+            if Yasa_sleep_stage_list[0] == "REM":
+                Yasa_REM_cnt-=1
+            Yasa_sleep_stage_list.pop(0)
+            #add the latest result
+            if Yasa_sleep_stage == "REM":
+                Yasa_REM_cnt+=1
+            Yasa_sleep_stage_list.append(Yasa_sleep_stage)
+
+            if Yasa_REM_cnt >= TIME_WINDOW * accepted_REM_percentage:
+                Yasa_sleep_stage_with_period = "REM_PEROID"
+            else:
+                Yasa_sleep_stage_with_period = "Not_REM_PEROID"
+
+            
+
 
 
 
@@ -290,7 +332,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
         message = t +": "
         if commandParameters.induction==False:
             # message += "sleep stage: "+ sleep_stage + ", EOG Class: "+str(eog_class)+ '\n'   
-            message += "sleep stage: "+ sleep_stage + ", Period result: "+ sleep_stage_with_period + '\n'  
+            message += "Nat'a model sleep stage: "+ sleep_stage + ", Nat's model sleep Period: "+ sleep_stage_with_period + ", Yasa sleep stage: "+ Yasa_sleep_stage + ", Yasa Sleep Period: "+ Yasa_sleep_stage_with_period +  '\n'
              # Store/update REM state in the global variable
             global rem_state
             rem_state = {'state': sleep_stage_with_period}  
