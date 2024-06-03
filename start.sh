@@ -11,8 +11,9 @@ find_folder_path() {
     # If LDI-System-main is found, find the API folder within it
     if [ -n "$SYSTEM_PATH" ]; then
         SERVER_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Server" 2>/dev/null | head -n 1)
-        COMMAND_SCRIPTS_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Command-Scripts" 2>/dev/null | head -n 1)
+        #COMMAND_SCRIPTS_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Command-Scripts" 2>/dev/null | head -n 1)
         SPEAKERS_DEVICES_FOLDER=$(find / -type d -name "Device_3-Speakers" 2>/dev/null | head -n 1)
+        DETECTOR_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Detector" 2>/dev/null | head -n 1)
     else
         echo "LuciEntry-Home folder not found."
         exit 1
@@ -28,7 +29,8 @@ start_server() {
 run_python_script() {
     sleep 15
     lxterminal --title="Speaker" --working-directory="$SPEAKERS_DEVICES_FOLDER" -e "bash -c 'python Device_3-Speakers.py && read -p \"Press ENTER to exit\"'"
-    lxterminal --title="Command Sender" --working-directory="$COMMAND_SCRIPTS_FOLDER" -e "bash -c 'python CommandSender.py && read -p \"Press ENTER to exit\"'"
+    #lxterminal --title="Command Sender" --working-directory="$COMMAND_SCRIPTS_FOLDER" -e "bash -c 'python CommandSender.py && read -p \"Press ENTER to exit\"'"
+    lxterminal --title="Detector" --working-directory="$DETECTOR_FOLDER" -e "bash -c 'python Detector.py && read -p \"Press ENTER to exit\"'"
 }
 
 # Add more functions if needed
