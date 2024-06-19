@@ -32,9 +32,9 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
         # Synthetic for generating fake data, cyton for using the actual real board
         board_id = BoardIds.SYNTHETIC_BOARD.value
     elif board_name =="OPEN_BCI":
-        #params.serial_port = "COM4" #WINDOWS
+        params.serial_port = "COM3" #WINDOWS
         #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
-        params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
+        #params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
         board_id = BoardIds.CYTON_BOARD.value
     elif board_name =="MUSE_S":
         parser = argparse.ArgumentParser()
@@ -117,6 +117,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
 
     # yasa counter
     yasa_data_eeg = np.ndarray(0)
+    yasa_data_eog  = np.ndarray(0)
     
     # participant and save file data
     participant_name = "Cosmos"
@@ -203,29 +204,35 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                 sleep_stage = "REM"
 
             # processing yasa model
+
             yasa_data_eeg  = np.concatenate((yasa_data_eeg, eeg_data[eeg_channel]))
-            # add eog later yasa_data_eog  = np.concatenate((yasa_data_eog, eeg_data[eog_channel_left]))
+            yasa_data_eog  = np.concatenate((yasa_data_eog, eeg_data[eog_channel_left]))
             print("yasa length:",len(yasa_data_eeg))
             if len(yasa_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
                 print("length enough")
-                info = create_info(ch_names=["EEG"],sfreq = sampling_rate, ch_types = ["eeg"])
-                yasa_data_eeg = yasa_data_eeg.reshape(1,-1)
-                raw = RawArray(yasa_data_eeg, info)
-                Yasa_stage = yasa.SleepStaging(raw ,eeg_name='EEG').predict()
-                print("yasa stage:",Yasa_stage)
+                info = create_info(ch_names=["EEG","EOG"],sfreq = sampling_rate, ch_types = ["eeg","eog"])
+                # yasa_data_eeg_reshape = yasa_data_eeg.reshape(1,-1)
+                # yasa_data_eog_reshape = yasa_data_eog.reshape(1,-1)
+                yasa_data_comb = np.vstack((yasa_data_eeg , yasa_data_eog))
+                yasa_data_comb = yasa_data_comb.reshape(2,-1)
+                raw = RawArray(yasa_data_comb, info)
+                Yasa_stages = yasa.SleepStaging(raw , eeg_name='EEG', eog_name='EOG').predict()
+                print("yasa stage:",Yasa_stages)
                 # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
-                print("First sleep stage:", Yasa_stage[0])
+                last = len(Yasa_stages) -1
+                print("last sleep stage:", Yasa_stages[last])
 
-                if Yasa_stage[0] == 'W':
+                if Yasa_stages[last] == 'W':
                     Yasa_sleep_stage = 'Awake'
-                if Yasa_stage[0] == 'N2' or Yasa_stage[0] == 'N3'or Yasa_stage[0] == 'N1':
+                if Yasa_stages[last] == 'N1' or Yasa_stages[last] == 'N2' or Yasa_stages[last] == 'N3':
                     Yasa_sleep_stage = "NREM"
-                if Yasa_stage[0] == 'R':
+                if Yasa_stages[last] == 'R':
                     Yasa_sleep_stage = "REM"
                 print("Yasa sleep stage: " , Yasa_sleep_stage)
-                yasa_data_eeg = np.ndarray(0)
-            
-
+                #yasa_data_eeg = np.ndarray(0)
+                yasa_data_eeg = yasa_data_eeg[8950:]
+                print("yasa length after removal:",len(yasa_data_eeg))
+                yasa_data_eog = yasa_data_eog[8950:]
 
 
 
@@ -259,7 +266,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             min_right_id = np.argmin(eog_data[eog_channel_right])
             
             if max_right < 500 and max_left < 500:
-                if abs(max_right_id - min_left_id) < 20 or abs(max_left_id - min_right_id) < 20:
+                if abs(max_right_id - min_left_id) < 25 or abs(max_left_id - min_right_id) < 25:
                     if max_left_id < max_right_id and min_left_id > min_right_id:
                         eog_class = "right"
                     if max_left_id > max_right_id and min_left_id < min_right_id:
