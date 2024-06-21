@@ -231,7 +231,10 @@ class Detector:
                 # eog_graph.eog_data_right = eog_data_filtered_right
                 # eog_graph.update_graph(eog_data_filtered_left, eog_data_filtered_right)
 
+                ### this is the code for the graph 
                 graph.setData(eog_data)
+
+                
                 eog_class = "neutral"
 
                 max_left = np.max(eog_data[self.eog_channel_left])
