@@ -32,7 +32,7 @@ class Device {
         newCommand?.setPayload(payload || {});
 
         if (newCommand == undefined){
-            console.error(`Could not find command`);
+            console.error(`Could not find command: ${command}`); // add device id and maybe some context?
             return false
         }
             
