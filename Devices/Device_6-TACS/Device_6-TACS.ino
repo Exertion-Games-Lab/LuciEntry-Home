@@ -18,13 +18,13 @@ const int Relay = 5;
 // Local Variables
 bool emergencyState = false;
 bool connected = false;
-int ID = 6; 
+int ID = 5; 
 #define ChangeGVSDirectionInterval 500
 
 // WIFI Details
-const char* SSID = "The boss";
-const char* PASSWORD = "37a472adae";
-const String IP_ADDRESS = "192.168.1.118";
+const char* SSID = "S@M@NTH@";
+const char* PASSWORD = "0437013417";
+const String IP_ADDRESS = "192.168.0.146";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 // enums 
@@ -33,8 +33,8 @@ enum InstructionCodes {
     TurnOffLED = 2,
     PlaySound = 3,
     StopSound = 4,
-    IncreaseVibration = 5,
-    DecreaseVibration = 6,
+    StartTACS = 5,
+    StopTACS = 6,
     LiftLegs = 7,
     LowerLegs = 8,
     LiftHead = 9,
@@ -46,16 +46,19 @@ enum InstructionCodes {
 // structs
 struct Instruction {
     int code;
-    JsonObject payload;
+    DynamicJsonDocument* payload;
 };
 
 struct Command {
     String name;
     Instruction* instructions;
     int noOfInstructions;
+    int currentInstructionNum;
 };
+
 // empty command
 Command EmptyCommand;
+Command* currentCommandPointer = nullptr;
 
 void setup() {
     // Serial Monitor Startup
@@ -72,10 +75,8 @@ void setup() {
     pinMode(IN1, OUTPUT);
     pinMode(IN2, OUTPUT);
     
-
     // Setup wifi 
     WiFi.mode(WIFI_STA);  // SETS TO STATION MODE!
-    connect();
 
     // Initialise Device
     analogWrite(PWMControl, 0);
@@ -84,46 +85,45 @@ void setup() {
 
     // Turn on Power indicator LED to indicate power on
     digitalWrite(LEDPower, HIGH);
-
+    EmptyCommand.name = "EmptyCommand";
 }
 
 void loop() {
-  // Check WiFi connection and reflect to indicator light
-  if (WiFi.status() == WL_CONNECTED) {
-    // Keep the indicator LED on
-    digitalWrite(LEDWiFi, HIGH);
+    // Check WiFi connection and reflect to indicator light
+    if (WiFi.status() == WL_CONNECTED) {
+        // Keep the indicator LED on
+        digitalWrite(LEDWiFi, HIGH);
     } else {
-    // Turn off the indicator LED
-    digitalWrite(LEDWiFi, LOW);
-    connect();
+        // Turn off the indicator LED
+        digitalWrite(LEDWiFi, LOW);
+        connect();
     }
 
     emergencyState = fetchEmergencyState();
-    if (emergencyState == false){
-      digitalWrite(LEDEmergency, LOW);
-      digitalWrite(Relay, LOW);
-      Command command = fetchNextCommand();
-      executeCommand(command);
+    if (!emergencyState) {
+        digitalWrite(LEDEmergency, LOW);
+        digitalWrite(Relay, LOW);
+        if (currentCommandPointer == nullptr || currentCommandPointer->noOfInstructions == 0) {
+            currentCommandPointer = fetchNextCommand();
+        } else {
+            executeCommand();
+        }
     } else {
-      digitalWrite(LEDEmergency, HIGH);
-      digitalWrite(Relay, HIGH);
+        digitalWrite(LEDEmergency, HIGH);
+        digitalWrite(Relay, HIGH);
+        currentCommandPointer = &EmptyCommand;
     }
-
-    delay(2000);
 }
 
-void ReadInput()
-{
-  while(Serial.available()>0)
-  {
-    int serialRead = Serial.parseInt();
-    analogWrite(PWMControl, serialRead);
-    Serial.println("I read "+String(serialRead));
-  }
+void ReadInput() {
+    while (Serial.available() > 0) {
+        int serialRead = Serial.parseInt();
+        analogWrite(PWMControl, serialRead);
+        Serial.println("I read " + String(serialRead));
+    }
 }
 
-
-void connect(){
+void connect() {
     // Connect to Wi-Fi network with SSID and password
     WiFi.begin(SSID, PASSWORD);
 
@@ -137,10 +137,25 @@ void connect(){
     Serial.println("Connected!");
 }
 
-Command fetchNextCommand(){
-    Command command = EmptyCommand;
+Command* fetchNextCommand() {
+    static unsigned long waitStartTime = 0;
+    static unsigned long waitDuration = 0;
 
-    Serial.println("Making http request for next command\n");
+    if (waitDuration == 0) {
+        waitStartTime = millis();
+        waitDuration = 2000;
+    } else {
+        unsigned long elapsedTime = millis() - waitStartTime;
+        if (elapsedTime < waitDuration) {
+            return &EmptyCommand;
+        } else {
+            waitDuration = 0;
+        }
+    }
+
+    Command* commandptr = &EmptyCommand;
+
+    Serial.println("Making http request for next command");
 
     WiFiClient client;
     HTTPClient http;
@@ -156,7 +171,8 @@ Command fetchNextCommand(){
 
     if (httpResponseCode == 200) {
         String payload = http.getString();
-        command = jsonObjectToCommand(payload);
+        commandptr = jsonObjectToCommand(payload);
+        commandptr->currentInstructionNum = 0;
     } else {
         Serial.print("Failed to get: ");
         Serial.println(httpResponseCode);
@@ -164,100 +180,118 @@ Command fetchNextCommand(){
     // Free resources
     http.end();
 
-    return command;
+    return commandptr;
 }
 
-Command jsonObjectToCommand(String payload) {
+Command* jsonObjectToCommand(String payload) {
     DynamicJsonDocument doc(5200);
     DeserializationError error = deserializeJson(doc, payload);
 
     if (error) {
-      Serial.println("Failed to read command");
-      Serial.println(error.c_str());
-      return EmptyCommand;
+        Serial.println("Failed to read command");
+        Serial.println(error.c_str());
+        return &EmptyCommand;
     }
 
-    Command command;
-    command.name = doc["command"]["name"].as<String>();
+    if (doc["command"]["name"].as<String>() == "null") {
+        // Empty command, ignore
+        return &EmptyCommand;
+    }
+
+    Command* commandptr = new Command;
+    commandptr->name = doc["command"]["name"].as<String>();
     JsonArray jsonInstructions = doc["command"]["instructions"].as<JsonArray>();
-    command.noOfInstructions = jsonInstructions.size();
-    command.instructions = new Instruction[command.noOfInstructions];
-
-    Serial.println("Command: " + command.name);
-
+    commandptr->instructions = new Instruction[jsonInstructions.size()];
+    commandptr->noOfInstructions = jsonInstructions.size();
+    
+    Serial.println("Command: " + commandptr->name);
     int i = 0;
     for (JsonObject jsonInstruction : jsonInstructions) {
-      command.instructions[i].code = jsonInstruction["code"].as<int>();
-      command.instructions[i].payload = jsonInstruction["payload"].as<JsonObject>();
-      i++;
-    }
+        commandptr->instructions[i].code = jsonInstruction["code"].as<int>();
 
-    return command;
+        // Deep copy Json object
+        commandptr->instructions[i].payload = new DynamicJsonDocument(1024);
+        String serialized;
+        serializeJson(jsonInstruction["payload"].as<JsonObject>(), serialized);
+        // Deserialize the serialized string into the destination JsonObject
+        DeserializationError error = deserializeJson(*(commandptr->instructions[i].payload), serialized);
+        if (error) {
+            Serial.print("Failed to parse JSON: ");
+            Serial.println(error.c_str());
+        }
+        i++;
+    }
+    
+    return commandptr;
 }
 
-void executeCommand(Command command){
-    for (int i=0; i<command.noOfInstructions; i++){
-        executeInstruction(command.instructions[i]);
+void executeCommand() {
+    if (currentCommandPointer->currentInstructionNum < currentCommandPointer->noOfInstructions) {
+        executeInstruction(currentCommandPointer->instructions[currentCommandPointer->currentInstructionNum]);
+    } else {
+        // Command finished, release the command
+        for (int i = 0; i < currentCommandPointer->noOfInstructions; i++) {
+            delete currentCommandPointer->instructions[i].payload;
+        }
+        delete[] currentCommandPointer->instructions;
+        delete currentCommandPointer;
+
+        currentCommandPointer = &EmptyCommand;
     }
 }
 
-void executeInstruction(Instruction instruction){
-    switch (instruction.code){
-        case TurnOnLED:
-            Turn(true);
+void executeInstruction(Instruction instruction) {
+    switch (instruction.code) {
+        case StartTACS:
+            Turn(true, (*instruction.payload)["intensity"].as<int>(), (*instruction.payload)["frequency"].as<int>());
             break;
-        case TurnOffLED:
-            Turn(false);
+        case StopTACS:
+            Turn(false, 0, 0);
             break;
         case Wait:
-            ChangeGVSDirection(instruction.payload["millis"]);
+            ChangeGVSDirection((*instruction.payload)["millis"].as<int>(), (*instruction.payload)["frequency"].as<int>());
             break;
         default:
             Serial.println("Instruction code does not exist");
     }
 }
 
+void ChangeGVSDirection(int time, int frequency) {
+    static unsigned long waitStartTime = 0;
+    static unsigned long waitDuration = 0;
 
-void wait(int time){
-  //delay(time);
-  Serial.println("Wait");
+    if (waitDuration == 0) {
+        waitStartTime = millis();
+        waitDuration = time;
+    } else {
+        unsigned long elapsedTime = millis() - waitStartTime;
+        
+        if (elapsedTime >= waitDuration) {
+            waitDuration = 0;
+            currentCommandPointer->currentInstructionNum++;
+        } else {
+            elapsedTime = millis() - waitStartTime;
+            int currentGVSNum = elapsedTime * frequency * 2 / 1000;
+            if (currentGVSNum % 2 == 0) {
+                digitalWrite(IN1, HIGH);
+                digitalWrite(IN2, LOW);
+            } else {
+                digitalWrite(IN1, LOW);
+                digitalWrite(IN2, HIGH);
+            }
+        }
+    }
 }
 
-
-void ChangeGVSDirection(int time)
-{
-  int cnt=0;
-  while(cnt<time)
-  {
-    
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
-    Serial.println("CW");
-    delay(ChangeGVSDirectionInterval);
-    cnt+=ChangeGVSDirectionInterval;
-    //ReadInput();
-    
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
-    Serial.println("CCW");
-    delay(ChangeGVSDirectionInterval);
-    cnt+=ChangeGVSDirectionInterval;
-  }
-  
-}
-
-void Turn(bool active)
-{
-  if(active)
-  {
-    analogWrite(PWMControl, 255);
-    Serial.println("Turn on");
-  }
-  else
-  {
-    analogWrite(PWMControl, 0);
-    Serial.println("Turn off");
-  }
+void Turn(bool active, int intensity, int frequency) {
+    if (active) {
+        analogWrite(PWMControl, intensity);
+        Serial.println("Turn on, Intensity = " + String(intensity) + ", Frequency = " + String(frequency));
+    } else {
+        analogWrite(PWMControl, 0);
+        Serial.println("Turn off");
+    }
+    currentCommandPointer->currentInstructionNum++; // Move to the next instruction
 }
 
 bool fetchEmergencyState() {

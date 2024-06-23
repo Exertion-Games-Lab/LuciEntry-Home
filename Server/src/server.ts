@@ -149,6 +149,7 @@ app.post('/command/:deviceId/:commandName', bodyParser.json(), (req, res) => {
 
     if (success){
         DEVICES = DEVICES.map(d => d.id == device?.id ? device : d);
-        res.status(200).send({ message: 'Command added' }); 
+        res.status(200).send({ message: 'Command added' });
+        console.log("Command received for: Device " + device?.id)
     }
 })
