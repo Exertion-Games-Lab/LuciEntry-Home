@@ -32,7 +32,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
         # Synthetic for generating fake data, cyton for using the actual real board
         board_id = BoardIds.SYNTHETIC_BOARD.value
     elif board_name =="OPEN_BCI":
-        params.serial_port = "COM4" #WINDOWS
+        params.serial_port = "COM3" #WINDOWS
         #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
         # params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
         board_id = BoardIds.CYTON_BOARD.value

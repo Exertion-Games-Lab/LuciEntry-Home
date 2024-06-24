@@ -278,7 +278,7 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             print("EOG Class:", eog_class)
 
             #////////////////////////////////////////////////////////////////////////////////////////////////
-            #yasa remdectect             
+            #yasa rem_dectect             
             eog_data_yasa = board.get_current_board_data(1700)
             eog_class2 = "neutral"
             
@@ -298,15 +298,11 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                 #                        duration=(0.3,1.5),freq_rem=(0.5,5), remove_outliers=False, verbose=False) 
                 print("rem_yasa", rem)
                 mask = rem.get_mask()
-
-
                 loc = (eog_data_yasa[eog_channel_left] * mask[0,:])
                 roc = (eog_data_yasa[eog_channel_right] * mask[1,:])
+                loc = loc[1500:] #(1700-1450=250 values)
+                roc = roc[1500:]
 
-                loc = loc[1550:] #(1700-1450=250 values)
-                roc = roc[1550:]
-                # print("loc  =",loc)
-                # print("roc  =",roc)
                 max_left = np.max(loc)
                 min_left = np.min(loc)
                 max_right = np.max(roc)
@@ -319,24 +315,31 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
                 min_left_id = np.argmin(loc)
                 max_right_id = np.argmax(roc)
                 min_right_id = np.argmin(roc)
-                if max_right < 500 and max_left < 500:
+                if max_right < 500 and max_left < 500: # to filter out massive spikes caused by noise
                     if max_right > 1 and max_left > 1: # in genral when left it seems right max is bigger thelaft min
                         # if max_right > max_left:
                         #     eog_class2 = "right"
                         # if max_left > max_right:
                         #     eog_class2 = "left"
-                        if abs(max_right_id - min_left_id) < 10 or abs(max_left_id - min_right_id) < 10:
-                            if max_left_id < min_left_id and max_right_id > min_right_id:
-                                eog_class2 = "right"
-                            if max_left_id > min_left_id and max_right_id < min_right_id:
-                                eog_class2 = "left" # option 2 cancel next opposite reaction bounce back
+                        if abs(max_right_id - min_left_id) < 15 or abs(max_left_id - min_right_id) < 15: #matches maxes and mins of the waves
+                            # if max_left_id < min_left_id and max_right_id > min_right_id:
+                            if max_left_id < max_right_id and min_left_id > min_right_id:
+                                eog_class2 = "right" 
+                                if eog_i_1 == "left" :
+                                    eog_class2 = "neutral"
+                            # if max_left_id > min_left_id and max_right_id < min_right_id:
+                            if max_left_id > max_right_id and min_left_id < min_right_id:
+                                eog_class2 = "left" 
+                                if eog_i_1 == "right" :
+                                    eog_class2 = "neutral"
                 print("EOG Class2 passed:", eog_class2)
-            except BaseException:
+            except BaseException:  # in case Yasa Rem_detect triggers an invalididation and reuterns a NONE result
                 eog_class2 = "neutral"
                 print("EOG Class2 failed :", eog_class2)
-
+            eog_i_1 = eog_class2
             #IF statements searching for LR signal
             T_count +=1
+
             if eog_class == "left":
                L_count = 1
                N_count = 0
@@ -355,7 +358,6 @@ def detection(commandParameters=[], board_name = "SYNTHETIC"):
             if T_count == 70: # period of eogclasses we would like to store
                LR_count = 0
                T_count = 0
-
             #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
             #nathan's model
             #pop out the first element
