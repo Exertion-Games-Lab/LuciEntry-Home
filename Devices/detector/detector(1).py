@@ -84,13 +84,10 @@ class Detector:
             self.eog_channel = self.channels[2]
         else:
             self.eeg_channel = self.channels[0]
-            print('eeg channel nuber=', self.channels[0] )
             self.eog_channel = self.channels[2]
             #Rohit's EOG classifier
             self.eog_channel_left = self.channels[2] #left electrode Channel 3
-            print('eog channel nuber=', self.channels[2] )
             self.eog_channel_right = self.channels [1] #right electrode Channel 2
-            print('eog channel nuber=', self.channels[1] )
 
 
         self.sleep_stage = 'Awake'
@@ -176,36 +173,36 @@ class Detector:
                 # board.start_stream()
 
 
-            if self.board.get_board_data_count() > 8999: #if there is enough samples to calculate sleep stage (3000 samples needed), classify sleep
+            # if self.board.get_board_data_count() > 8999: #if there is enough samples to calculate sleep stage (3000 samples needed), classify sleep
 
-                # pull new data from the buffer
-                eeg_data = self.board.get_board_data()
+            #     # pull new data from the buffer
+            #     eeg_data = self.board.get_board_data()
 
-                # process data
-                # this peforms some denoising to the data and peforms a spectral analysis to get power spectal density (psd)
-                DataFilter.perform_downsampling(eeg_data[self.eeg_channel], 3, AggOperations.MEDIAN.value)
-                DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
-                psd = DataFilter.get_psd_welch(eeg_data[self.eeg_channel], self.nfft, self.nfft // 2, self.sampling_rate,
-                                            WindowOperations.BLACKMAN_HARRIS.value)
+            #     # process data
+            #     # this peforms some denoising to the data and peforms a spectral analysis to get power spectal density (psd)
+            #     DataFilter.perform_downsampling(eeg_data[self.eeg_channel], 3, AggOperations.MEDIAN.value)
+            #     DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
+            #     psd = DataFilter.get_psd_welch(eeg_data[self.eeg_channel], self.nfft, self.nfft // 2, self.sampling_rate,
+            #                                 WindowOperations.BLACKMAN_HARRIS.value)
 
-                # the power of each eeg bandwidth is then extracted from psd and added to an array
-                delta = DataFilter.get_band_power(psd, 0.5, 4.0)
-                theta = DataFilter.get_band_power(psd, 4.0, 8.0)
-                alpha = DataFilter.get_band_power(psd, 8.0, 14.0)
-                beta = DataFilter.get_band_power(psd, 14.0, 30.0)
-                gamma = DataFilter.get_band_power(psd, 30.0, 45.0)
-                bands = np.array([delta, theta, alpha, beta, gamma])
-                bands = np.reshape(bands,(1,5))
+            #     # the power of each eeg bandwidth is then extracted from psd and added to an array
+            #     delta = DataFilter.get_band_power(psd, 0.5, 4.0)
+            #     theta = DataFilter.get_band_power(psd, 4.0, 8.0)
+            #     alpha = DataFilter.get_band_power(psd, 8.0, 14.0)
+            #     beta = DataFilter.get_band_power(psd, 14.0, 30.0)
+            #     gamma = DataFilter.get_band_power(psd, 30.0, 45.0)
+            #     bands = np.array([delta, theta, alpha, beta, gamma])
+            #     bands = np.reshape(bands,(1,5))
 
-                # the array is then fit to the model we made earlier to classify sleep stage
-                sleep_stage_class = self.sleep_stager.predict(bands)
+            #     # the array is then fit to the model we made earlier to classify sleep stage
+            #     sleep_stage_class = self.sleep_stager.predict(bands)
 
-                if sleep_stage_class == 0.0:
-                    sleep_stage = "Awake"
-                if sleep_stage_class == 1.0:
-                    sleep_stage = "NREM"
-                if sleep_stage_class == 4.0:
-                    sleep_stage = "REM"
+            #     if sleep_stage_class == 0.0:
+            #         sleep_stage = "Awake"
+            #     if sleep_stage_class == 1.0:
+            #         sleep_stage = "NREM"
+            #     if sleep_stage_class == 4.0:
+            #         sleep_stage = "REM"
 
 
                 
@@ -216,15 +213,15 @@ class Detector:
 
             else: # else, just keep updating eog stuff
                 time.sleep(0.2)
-                if self.board.get_board_data_count() < 150:
+                if self.board.get_board_data_count() < 1700:
                     continue
                 self.timeoutCnt+=1
                 eog_data = self.board.get_current_board_data(150)
                 # Applying filters to channels
                 DataFilter.detrend(eog_data[self.eog_channel_left], DetrendOperations.LINEAR.value)
                 DataFilter.detrend(eog_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
-                DataFilter.perform_bandpass(eog_data[self.eog_channel_left], 150, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
-                DataFilter.perform_bandpass(eog_data[self.eog_channel_right], 150, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandpass(eog_data[self.eog_channel_left], self.sampling_rate, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandpass(eog_data[self.eog_channel_right], self.sampling_rate, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
                 DataFilter.perform_rolling_filter(eog_data[self.eog_channel_left], 5, AggOperations.MEAN.value)
                 DataFilter.perform_rolling_filter(eog_data[self.eog_channel_right], 5, AggOperations.MEAN.value)
                 #labels
@@ -233,9 +230,10 @@ class Detector:
                 # eog_graph.eog_data_left = eog_data_filtered_left
                 # eog_graph.eog_data_right = eog_data_filtered_right
                 # eog_graph.update_graph(eog_data_filtered_left, eog_data_filtered_right)
-                eog_data = eog_data[1:,:]
-                print(eog_data.shape)
-                graph.setData(eog_data)
+
+                # eog_data = eog_data[1:,:]
+                # print(eog_data.shape)
+                # graph.setData(eog_data)
                 eog_class = "neutral"
 
                 max_left = np.max(eog_data[self.eog_channel_left])
@@ -257,6 +255,83 @@ class Detector:
 
                 print("EOG Class:", eog_class)
 
+
+                eog_data_yasa = self.board.get_current_board_data(1700)
+                eog_class2 = "neutral"
+            
+                DataFilter.detrend(eog_data_yasa[self.eog_channel_left], DetrendOperations.LINEAR.value)
+                DataFilter.detrend(eog_data_yasa[self.eog_channel_right], DetrendOperations.LINEAR.value)
+                DataFilter.perform_bandpass(eog_data_yasa[self.eog_channel_left], self.sampling_rate, 0.3, 7, 4, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandpass(eog_data_yasa[self.eog_channel_right], self.sampling_rate, 0.3, 7, 4, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_left], 5, AggOperations.MEDIAN.value)
+                DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_right], 5, AggOperations.MEDIAN.value)
+                print(self.sampling_rate)
+                yasa_eog_comb = np.vstack((eog_data_yasa[self.eog_channel_left],eog_data_yasa[self.eog_channel_right]))
+                yasa_eog_comb = yasa_eog_comb.reshape(2,-1)
+                try:
+                    rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],self.sampling_rate)
+                # rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],
+                #                        sampling_rate, hypno=None, include=4, amplitude = (50,325),
+                #                        duration=(0.3,1.5),freq_rem=(0.5,5), remove_outliers=False, verbose=False) 
+                    print("rem_yasa", rem)
+                    mask = rem.get_mask()
+
+                    loc = (eog_data_yasa[self.eog_channel_left] * mask[0,:])
+                    roc = (eog_data_yasa[self.eog_channel_right] * mask[1,:])
+                    loc = loc[1550:] #(1700-1450=250 values)
+                    roc = roc[1550:]
+
+                    max_left = np.max(loc)
+                    min_left = np.min(loc)
+                    max_right = np.max(roc)
+                    min_right = np.min(roc)
+                    # print("max right  =",max_right)
+                    # print("max left  =",max_left)
+                    # print("min right  =",min_right)
+                    # print("min left  =",min_left)
+                    max_left_id = np.argmax(loc)
+                    min_left_id = np.argmin(loc)
+                    max_right_id = np.argmax(roc)
+                    min_right_id = np.argmin(roc)
+                    if max_right < 500 and max_left < 500: # to filter out massive spikes caused by noise
+                        if max_right > 1 and max_left > 1: # in genral when left it seems right max is bigger thelaft min
+                        # if max_right > max_left:
+                        #     eog_class2 = "right"
+                        # if max_left > max_right:
+                        #     eog_class2 = "left"
+                            if abs(max_right_id - min_left_id) < 10 or abs(max_left_id - min_right_id) < 10: #matches maxes and mins of the waves
+                            # if max_left_id < min_left_id and max_right_id > min_right_id:
+                                if max_left_id < max_right_id and min_left_id > min_right_id:
+                                    eog_class2 = "right" 
+                                if eog_i_1 == "left" :
+                                    eog_class2 = "neutral"
+                            # if max_left_id > min_left_id and max_right_id < min_right_id:
+                                if max_left_id > max_right_id and min_left_id < min_right_id:
+                                    eog_class2 = "left" 
+                                    if eog_i_1 == "right" :
+                                        eog_class2 = "neutral"
+                        print("EOG Class2 passed:", eog_class2)
+                        # print(eog_data[self.eeg_channel].shape)
+                        # print(roc.shape)
+                        # print(loc.shape)
+                        try: 
+                            eeg_rand_test = np.random.rand(150)
+                            # eeg_test = eog_data[self.eeg_channel]
+                            # eeg_test = eeg_test.reshape(1,-1)
+                            yasa_graph_test = np.array([eeg_rand_test, roc, loc]) #to fix : add eeg data to first column
+                            # yasa_graph_test = yasa_graph_test.append(eog_data[self.eeg_channel])
+                            # yasa_graph_test = yasa_graph_test.append(roc)
+                            # yasa_graph_test = yasa_graph_test.append(loc)
+                            print(yasa_graph_test.shape)
+                            graph.setData(yasa_graph_test)
+                        except BaseException:  # in case Yasa Rem_detect triggers an invalididation and reuterns a NONE result
+                            print("graphing failed") 
+                except BaseException:  # in case Yasa Rem_detect triggers an invalididation and reuterns a NONE result
+                    eog_class2 = "neutral"
+                    print("EOG Class2 failed :", eog_class2)
+                eog_i_1 = eog_class2
+
+                eog_class = eog_class2
                 #IF statements searching for LR signal
                 self.T_count +=1
                 if eog_class == "left":
@@ -275,7 +350,7 @@ class Detector:
                 if self.LR_count == 4: # number of LR signals you would like to receive
                     print("LR signal received !!!")
                     # put global variable saying LR signal confirmed
-                if self.T_count == 70: # period of eogclasses we would like to store
+                if self.T_count == 150: # period of eogclasses we would like to store
                     self.LR_count = 0
                     self.T_count = 0
 
