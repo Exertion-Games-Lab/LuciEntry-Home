@@ -322,11 +322,11 @@ class Detector:
                 #nathan's model
                 #pop out the first element
                 if self.sleep_stage_list[0] == "REM":
-                    REM_cnt-=1
+                    self.REM_cnt-=1
                 self.sleep_stage_list.pop(0)
                 #add the latest result
                 if self.sleep_stage == "REM":
-                    REM_cnt+=1
+                    self.REM_cnt+=1
                 self.sleep_stage_list.append(self.sleep_stage)
 
                 if self.REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
@@ -395,6 +395,7 @@ def main():
     flask_thread = Thread(target=lambda: app.run(host='0.0.0.0',port = '5050', debug=True, use_reloader=False))
     flask_thread.start()
     board = Detector("OPEN_BCI")
+    # board = Detector()
     graph = GraphDrawer.Graph(board_shim=board)
     board_thread = Thread(target=lambda: board.update(graph))
     board_thread.start()
