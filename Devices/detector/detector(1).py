@@ -37,7 +37,7 @@ class Detector:
             # Synthetic for generating fake data, cyton for using the actual real board
             self.board_id = BoardIds.SYNTHETIC_BOARD.value
         elif board_name =="OPEN_BCI":
-            self.params.serial_port = "COM3" #WINDOWS
+            self.params.serial_port = "COM4" #WINDOWS
             #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
             # params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
             self.board_id = BoardIds.CYTON_BOARD.value
@@ -213,7 +213,7 @@ class Detector:
 
             else: # else, just keep updating eog stuff
                 time.sleep(0.2)
-                if self.board.get_board_data_count() < 1700:
+                if self.board.get_board_data_count() < 2800:
                     continue
                 self.timeoutCnt+=1
                 eog_data = self.board.get_current_board_data(150)
@@ -255,8 +255,8 @@ class Detector:
 
                 print("EOG Class:", eog_class)
 
-
-                eog_data_yasa = self.board.get_current_board_data(1700)
+                # yasa rem_detect EOG classification model ////////////////////////////////////////////////////
+                eog_data_yasa = self.board.get_current_board_data(2800)
                 eog_class2 = "neutral"
             
                 DataFilter.detrend(eog_data_yasa[self.eog_channel_left], DetrendOperations.LINEAR.value)
@@ -265,63 +265,65 @@ class Detector:
                 DataFilter.perform_bandpass(eog_data_yasa[self.eog_channel_right], self.sampling_rate, 0.3, 7, 4, FilterTypes.BUTTERWORTH.value, 0)
                 DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_left], 5, AggOperations.MEDIAN.value)
                 DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_right], 5, AggOperations.MEDIAN.value)
-                print(self.sampling_rate)
+                # print(self.sampling_rate)
                 yasa_eog_comb = np.vstack((eog_data_yasa[self.eog_channel_left],eog_data_yasa[self.eog_channel_right]))
                 yasa_eog_comb = yasa_eog_comb.reshape(2,-1)
-                try:
-                    rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],self.sampling_rate)
-                # rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],
-                #                        sampling_rate, hypno=None, include=4, amplitude = (50,325),
-                #                        duration=(0.3,1.5),freq_rem=(0.5,5), remove_outliers=False, verbose=False) 
-                    print("rem_yasa", rem)
-                    mask = rem.get_mask()
+                try: 
+                    # have to use try here as the rem_detect code staops the whole code if there are outliers or no rem detected.
 
+                    # rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],self.sampling_rate)
+                    rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],
+                                       self.sampling_rate, hypno=None, include=4, amplitude = (50,325),
+                                       duration=(0.5,1),freq_rem=(0.3,7), remove_outliers=False, verbose=False) 
+                    #print("rem_yasa", rem)
+                                        # investigate wrong data amplitude arrors as quick lr detection marker
+                    # filtering out noise using rem.get_mask, (so when mask is 1 then its rem and when 0 it is not rem)
+                    mask = rem.get_mask()
                     loc = (eog_data_yasa[self.eog_channel_left] * mask[0,:])
                     roc = (eog_data_yasa[self.eog_channel_right] * mask[1,:])
-                    loc = loc[1550:] #(1700-1450=250 values)
-                    roc = roc[1550:]
+                    loc = loc[(2800-150):] #(1700-1450=250 values)
+                    roc = roc[(2800-150):] # this uses a rolling time window to capture the last second of data and 
 
                     max_left = np.max(loc)
                     min_left = np.min(loc)
                     max_right = np.max(roc)
                     min_right = np.min(roc)
-                    # print("max right  =",max_right)
-                    # print("max left  =",max_left)
-                    # print("min right  =",min_right)
-                    # print("min left  =",min_left)
                     max_left_id = np.argmax(loc)
                     min_left_id = np.argmin(loc)
                     max_right_id = np.argmax(roc)
                     min_right_id = np.argmin(roc)
+                    # print("max right  =",max_right)
+                    # print("max left  =",max_left)
+                    # print("min right  =",min_right)
+                    # print("min left  =",min_left)
+                    
                     if max_right < 500 and max_left < 500: # to filter out massive spikes caused by noise
                         if max_right > 1 and max_left > 1: # in genral when left it seems right max is bigger thelaft min
-                        # if max_right > max_left:
-                        #     eog_class2 = "right"
-                        # if max_left > max_right:
-                        #     eog_class2 = "left"
-                            if abs(max_right_id - min_left_id) < 10 or abs(max_left_id - min_right_id) < 10: #matches maxes and mins of the waves
-                            # if max_left_id < min_left_id and max_right_id > min_right_id:
-                                if max_left_id < max_right_id and min_left_id > min_right_id:
-                                    eog_class2 = "right" 
-                                if eog_i_1 == "left" :
-                                    eog_class2 = "neutral"
-                            # if max_left_id > min_left_id and max_right_id < min_right_id:
-                                if max_left_id > max_right_id and min_left_id < min_right_id:
-                                    eog_class2 = "left" 
-                                    if eog_i_1 == "right" :
-                                        eog_class2 = "neutral"
+                            if max_right > max_left:
+                                eog_class2 = "right"
+                            if max_left > max_right:
+                                eog_class2 = "left"
+                            # if max_right > abs(min_right):
+                            #     eog_class2 = "right"
+                            # if max_left > abs(min_left):
+                            #     eog_class2 = "left"
+                            # if abs(max_right_id - min_left_id) < 15 or abs(max_left_id - min_right_id) < 15: #matches maxes and mins of the waves
+                            #     if max_left_id < max_right_id and min_left_id > min_right_id:
+                            #         eog_class2 = "right" 
+                            #         if eog_i_1 == "left" :
+                            #             eog_class2 = "neutral"
+                            #     if max_left_id > max_right_id and min_left_id < min_right_id:
+                            #         eog_class2 = "left" 
+                            #         if eog_i_1 == "right" :
+                            #             eog_class2 = "neutral"
                         print("EOG Class2 passed:", eog_class2)
-                        # print(eog_data[self.eeg_channel].shape)
-                        # print(roc.shape)
-                        # print(loc.shape)
+
+
                         try: 
                             eeg_rand_test = np.random.rand(150)
                             # eeg_test = eog_data[self.eeg_channel]
                             # eeg_test = eeg_test.reshape(1,-1)
                             yasa_graph_test = np.array([eeg_rand_test, roc, loc]) #to fix : add eeg data to first column
-                            # yasa_graph_test = yasa_graph_test.append(eog_data[self.eeg_channel])
-                            # yasa_graph_test = yasa_graph_test.append(roc)
-                            # yasa_graph_test = yasa_graph_test.append(loc)
                             print(yasa_graph_test.shape)
                             graph.setData(yasa_graph_test)
                         except BaseException:  # in case Yasa Rem_detect triggers an invalididation and reuterns a NONE result
@@ -350,7 +352,7 @@ class Detector:
                 if self.LR_count == 4: # number of LR signals you would like to receive
                     print("LR signal received !!!")
                     # put global variable saying LR signal confirmed
-                if self.T_count == 150: # period of eogclasses we would like to store
+                if self.T_count == 70: # period of eogclasses we would like to store
                     self.LR_count = 0
                     self.T_count = 0
 
