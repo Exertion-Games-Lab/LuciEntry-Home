@@ -17,9 +17,11 @@ bool connected = false;
 int ID = 3;
 
 // WIFI Details
-const char* SSID = "The boss";
-const char* PASSWORD = "37a472adae";
-const String IP_ADDRESS = "192.168.1.118";
+// const char* SSID = "The boss";
+// const char* PASSWORD = "37a472adae";
+const char* SSID = "ORBI80";
+const char* PASSWORD = "classychair864";
+const String IP_ADDRESS = "192.168.1.41";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 void setup() {
