@@ -366,7 +366,7 @@ class Detector:
             message += "Nat'a model sleep stage: "+ self.sleep_stage + ", Nat's model sleep Period: "+ self.sleep_stage_with_period + ", Yasa sleep stage: "+ self.Yasa_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_sleep_stage_with_period +  '\n'
             # Store/update REM state in the global variable
             global rem_state
-            rem_state = {'state': self.sleep_stage_with_period}  
+            rem_state = {'state': self.Yasa_sleep_stage_with_period}  
             # else:
             #     message += "EOG Class: " + str(eog_class) +'\n'   
             f = open(self.sleep_data_file_name, "a")
