@@ -186,12 +186,17 @@ class Detector:
 
                 # pull new data from the buffer
                 eeg_data = self.board.get_board_data()
+                DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
+                DataFilter.detrend(eeg_data[self.eog_channel_left], DetrendOperations.LINEAR.value)
+                
+                self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, eeg_data[self.eeg_channel]))
+                self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, eeg_data[self.eog_channel_left]))
 
                 # process data of nathan's model
 
                 # this peforms some denoising to the data and peforms a spectral analysis to get power spectal density (psd)
                 DataFilter.perform_downsampling(eeg_data[self.eeg_channel], 3, AggOperations.MEDIAN.value)
-                DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
+                # DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
                 psd = DataFilter.get_psd_welch(eeg_data[self.eeg_channel], self.nfft, self.nfft // 2, self.sampling_rate,
                                         WindowOperations.BLACKMAN_HARRIS.value)
 
@@ -216,8 +221,7 @@ class Detector:
 
             # processing yasa model
 
-                self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, eeg_data[self.eeg_channel]))
-                self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, eeg_data[self.eog_channel_left]))
+
                 #print("yasa length:",len(yasa_data_eeg))
                 if len(self.yasa_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
                     # print("length enough")
