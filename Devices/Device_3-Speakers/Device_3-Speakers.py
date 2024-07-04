@@ -2,6 +2,8 @@ import requests
 from playsound import playsound
 import time
 import asyncio
+import platform
+import os
 
 def fetch_next_command(device_id, base_url):
     try:
@@ -19,11 +21,13 @@ def fetch_next_command(device_id, base_url):
 async def execute_instruction(instruction):
     code = instruction['code']
     payload = instruction['payload']
+    
     if code == 3:
         print(f'Executing instruction 3 with payload {payload}')
         soundName = payload['soundName']
         durationMilliSeconds = payload['durationMillis']
-        await playSound(soundName, durationMilliSeconds)
+        volume = payload['volume']
+        await playSound(soundName, durationMilliSeconds,volume)
     else:
         print(f'Unknown instruction code {code}. Ignoring.')
 
@@ -49,11 +53,23 @@ async def customSleep(time: int):
         if await checkKillCommands():
             return
         await asyncio.sleep(0.1)
+        
+async def set_volume(volume: int):
+    system = platform.system()
+    if system == 'Windows':
+        os.system(f"nircmd.exe setsysvolume {volume * 65535 // 100}")
+    elif system == 'Darwin':  # macOS
+        os.system(f"osascript -e 'set volume output volume {volume}'")
+    elif system == 'Linux':
+        os.system(f"amixer -D pulse sset Master {volume}%")
+    else:
+        print("Unsupported OS")
 
-async def playSound(soundName: str, durationMilliSeconds: int):
+async def playSound(soundName: str, durationMilliSeconds: int,volume: int):
     durationSeconds = durationMilliSeconds / 1000
-    print(soundName)
+    print(f"Playing sound {soundName} at volume {volume}")
     try:
+        await set_volume(volume)
         playsound(f'./mp3/{soundName}', block=False)
         await customSleep(durationSeconds)
     except:

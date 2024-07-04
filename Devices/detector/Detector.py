@@ -12,7 +12,7 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes, AggOperations
 
 # our own graph drawer
-import GraphDrawer
+#import GraphDrawer
 from threading import Thread
 
 import os
@@ -37,9 +37,9 @@ class Detector:
             # Synthetic for generating fake data, cyton for using the actual real board
             self.board_id = BoardIds.SYNTHETIC_BOARD.value
         elif board_name =="OPEN_BCI":
-            self.params.serial_port = "COM4" #WINDOWS
+            #self.params.serial_port = "COM4" #WINDOWS
             #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
-            # params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
+            self.params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
             self.board_id = BoardIds.CYTON_BOARD.value
         elif board_name =="MUSE_S":
             parser = argparse.ArgumentParser()
@@ -186,12 +186,17 @@ class Detector:
 
                 # pull new data from the buffer
                 eeg_data = self.board.get_board_data()
+                DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
+                DataFilter.detrend(eeg_data[self.eog_channel_left], DetrendOperations.LINEAR.value)
+                
+                self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, eeg_data[self.eeg_channel]))
+                self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, eeg_data[self.eog_channel_left]))
 
                 # process data of nathan's model
 
                 # this peforms some denoising to the data and peforms a spectral analysis to get power spectal density (psd)
                 DataFilter.perform_downsampling(eeg_data[self.eeg_channel], 3, AggOperations.MEDIAN.value)
-                DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
+                # DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
                 psd = DataFilter.get_psd_welch(eeg_data[self.eeg_channel], self.nfft, self.nfft // 2, self.sampling_rate,
                                         WindowOperations.BLACKMAN_HARRIS.value)
 
@@ -216,8 +221,7 @@ class Detector:
 
             # processing yasa model
 
-                self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, eeg_data[self.eeg_channel]))
-                self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, eeg_data[self.eog_channel_left]))
+
                 #print("yasa length:",len(yasa_data_eeg))
                 if len(self.yasa_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
                     # print("length enough")
@@ -274,7 +278,7 @@ class Detector:
                 # eog_graph.update_graph(eog_data_filtered_left, eog_data_filtered_right)
                 eog_data = eog_data[1:,:]
                 print(eog_data.shape)
-                graph.setData(eog_data)
+                #graph.setData(eog_data)
 
                 
                 eog_class = "neutral"
@@ -367,6 +371,7 @@ class Detector:
             # Store/update REM state in the global variable
             global rem_state
             rem_state = {'state': self.Yasa_sleep_stage_with_period}  
+            #rem_state = {'state': self.sleep_stage_with_period} 
             # else:
             #     message += "EOG Class: " + str(eog_class) +'\n'   
             f = open(self.sleep_data_file_name, "a")
@@ -397,12 +402,13 @@ def main():
     flask_thread = Thread(target=lambda: app.run(host='0.0.0.0',port = '5050', debug=True, use_reloader=False))
     flask_thread.start()
     board = Detector("OPEN_BCI")
-    # board = Detector()
-    graph = GraphDrawer.Graph(board_shim=board)
+    #board = Detector()
+    #graph = GraphDrawer.Graph(board_shim=board)
+    graph = None
     board_thread = Thread(target=lambda: board.update(graph))
     board_thread.start()
     
-    graph.update_loop()
+    #graph.update_loop()
 
 
     # commandParameters = Parameter()
