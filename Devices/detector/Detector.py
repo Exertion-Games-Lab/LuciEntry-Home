@@ -111,8 +111,16 @@ class Detector:
         self.sleep_stager = pickle.load(open(sleep_stager_file_path, 'rb'))
 
         ## Connect to the board and prepare to start streaming data
-        self.board.prepare_session()
-        self.board.start_stream()
+        while self.board.is_prepared()==False:
+                    print("trying to connect to board...")
+                    try:
+                        self.board.prepare_session()
+                        self.board.start_stream()
+                        # Graph(board)
+                    except:
+                        print("reconnection failed. Try again...")
+                        time.sleep(1) ## wait for a bit 
+        print("reconnection finished")
         # In your main detection function
         # app = QtWidgets.QApplication([])
         # eog_graph = EogGraph()
