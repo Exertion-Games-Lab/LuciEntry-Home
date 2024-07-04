@@ -24,3 +24,8 @@ The device sends HTTP requests to the server to fetch commands and post status u
 
 ### Command Execution: 
 The device executes commands by controlling GPIO pins, interacting with sensors, or performing other hardware-related tasks.
+
+
+# FAQ
+- Q: If my device shows red light only, what does that mean?
+  - A: Need to change the batteries before usage.
