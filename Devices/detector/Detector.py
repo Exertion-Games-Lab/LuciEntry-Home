@@ -135,6 +135,8 @@ class Detector:
         self.L_count = 0
         self.LR_count = 0
         self.T_count = 0
+        self.LR_count_perm = 0
+        
 
         # yasa counter
         self.yasa_data_eeg = np.ndarray(0)
@@ -349,6 +351,63 @@ class Detector:
 
                 print("EOG Class:", eog_class)
 
+                    #////////////////////////////////////////////////////////////////////////////////////////////////
+                #yasa rem_dectect             
+                eog_data_yasa = self.board.get_current_board_data(1700)
+                eog_class2 = "neutral"
+                
+                DataFilter.detrend(eog_data_yasa[self.eog_channel_left], DetrendOperations.LINEAR.value)
+                DataFilter.detrend(eog_data_yasa[self.eog_channel_right], DetrendOperations.LINEAR.value)
+                DataFilter.perform_bandpass(eog_data_yasa[self.eog_channel_left], self.sampling_rate, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandpass(eog_data_yasa[self.eog_channel_right], self.sampling_rate, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_left], 5, AggOperations.MEDIAN.value)
+                DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_right], 5, AggOperations.MEDIAN.value)
+
+                yasa_eog_comb = np.vstack((eog_data_yasa[self.eog_channel_left],eog_data_yasa[self.eog_channel_right]))
+                yasa_eog_comb = yasa_eog_comb.reshape(2,-1)
+                try:
+                    rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],self.sampling_rate)
+                    # rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],
+                    #                        sampling_rate, hypno=None, include=4, amplitude = (50,325),
+                    #                        duration=(0.3,1.5),freq_rem=(0.5,5), remove_outliers=False, verbose=False) 
+                    print("rem_yasa", rem)
+                    mask = rem.get_mask()
+                    loc = (eog_data_yasa[self.eog_channel_left] * mask[0,:])
+                    roc = (eog_data_yasa[self.eog_channel_right] * mask[1,:])
+                    loc = loc[1500:] #(1700-1450=250 values)
+                    roc = roc[1500:]
+
+                    max_left = np.max(loc)
+                    min_left = np.min(loc)
+                    max_right = np.max(roc)
+                    min_right = np.min(roc)
+                    print("max right  =",max_right)
+                    print("max left  =",max_left)
+                    print("min right  =",min_right)
+                    print("min left  =",min_left)
+                    max_left_id = np.argmax(loc)
+                    min_left_id = np.argmin(loc)
+                    max_right_id = np.argmax(roc)
+                    min_right_id = np.argmin(roc)
+                    if max_right < 500 and max_left < 500: # to filter out massive spikes caused by noise
+                        if max_right > 1 and max_left > 1: # in genral when left it seems right max is bigger thelaft min
+                            if abs(max_right_id - min_left_id) < 15 or abs(max_left_id - min_right_id) < 15: #matches maxes and mins of the waves
+                                # if max_left_id < min_left_id and max_right_id > min_right_id:
+                                if max_left_id < max_right_id and min_left_id > min_right_id:
+                                    eog_class2 = "right" 
+                                    if eog_i_1 == "left" :
+                                        eog_class2 = "neutral"
+                                # if max_left_id > min_left_id and max_right_id < min_right_id:
+                                if max_left_id > max_right_id and min_left_id < min_right_id:
+                                    eog_class2 = "left" 
+                                    if eog_i_1 == "right" :
+                                        eog_class2 = "neutral"
+                    print("EOG Class2 passed:", eog_class2)
+                except BaseException:  # in case Yasa Rem_detect triggers an invalididation and reuterns a NONE result
+                    eog_class2 = "neutral"
+                    print("EOG Class2 failed :", eog_class2)
+                eog_i_1 = eog_class2
+                eog_class = eog_class2
                 #IF statements searching for LR signal
                 self.T_count +=1
                 if eog_class == "left":
@@ -362,10 +421,12 @@ class Detector:
                     self.L_count = 0
 
                 if self.L_count == 1 and eog_class == "right":
+                    self.LR_count_perm += 1
                     self.LR_count += 1
                     self.L_count = 0
                 if self.LR_count == 4: # number of LR signals you would like to receive
                     print("LR signal received !!!")
+                    self.LR_count_perm += 1
                     # put global variable saying LR signal confirmed
                 if self.T_count == 70: # period of eogclasses we would like to store
                     self.LR_count = 0
@@ -435,7 +496,8 @@ class Detector:
             # message += "sleep stage: "+ sleep_stage + ", EOG Class: "+str(eog_class)+ '\n'   
             message += "Nat'a model sleep stage: "+ self.sleep_stage + ", Nat's model sleep Period: "+ self.sleep_stage_with_period 
             message += ", Yasa sleep stage: "+ self.Yasa_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_sleep_stage_with_period 
-            message += ", Yasa sleep stage: "+ self.Yasa_hour_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_hour_sleep_stage_with_period +  '\n'
+            message += ", Yasa sleep stage: "+ self.Yasa_hour_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_hour_sleep_stage_with_period 
+            message += + ", LR signal count: " + self.LR_count_perm '\n'
             # Store/update REM state in the global variable
             global rem_state
             rem_state = {'state': self.Yasa_sleep_stage_with_period}  
