@@ -95,6 +95,7 @@ class Detector:
 
         self.sleep_stage = 'Awake'
         self.Yasa_sleep_stage = 'Awake'
+        self.Yasa_hour_sleep_stage = 'Awake'
 
         self.sampling_rate = BoardShim.get_sampling_rate(self.board_id)
         self.nfft = DataFilter.get_nearest_power_of_two(self.sampling_rate)
@@ -138,6 +139,8 @@ class Detector:
         # yasa counter
         self.yasa_data_eeg = np.ndarray(0)
         self.yasa_data_eog  = np.ndarray(0)
+        self.yasa_hour_data_eeg = np.ndarray(0)
+        self.yasa_hour_data_eog  = np.ndarray(0)
         
         # participant and save file data
         participant_name = "Cosmos"
@@ -154,12 +157,16 @@ class Detector:
         #list of sleep stage within last TIME_PERIOD
         self.sleep_stage_list = ["NaN"]* self.TIME_WINDOW
         self.Yasa_sleep_stage_list = ["NaN"]* self.TIME_WINDOW
+        self.Yasa_hour_sleep_stage_list = ["NaN"]* self.TIME_WINDOW
+
         #how many REM are in the list
         self.REM_cnt = 0
         self.Yasa_REM_cnt = 0
+        self.Yasa_hour_REM_cnt = 0
         #final result
         self.sleep_stage_with_period = "NaN"
         self.Yasa_sleep_stage_with_period = "NaN"
+        self.Yasa_hour_sleep_stage_with_period = "NaN"
 
     def update(self, graph):
         while True:
@@ -199,6 +206,9 @@ class Detector:
                 
                 self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, eeg_data[self.eeg_channel]))
                 self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, eeg_data[self.eog_channel_left]))
+                
+                self.yasa_hour_data_eeg  = np.concatenate((self.yasa_hour_data_eeg, eeg_data[self.eeg_channel]))
+                self.yasa_hour_data_eog  = np.concatenate((self.yasa_hour_data_eog, eeg_data[self.eog_channel_left]))
 
                 # process data of nathan's model
 
@@ -257,6 +267,35 @@ class Detector:
                     # print("yasa length after removal:",len(yasa_data_eeg))
                     self.yasa_data_eog = self.yasa_data_eog[8950:]
 
+            # processing yasa hour model
+
+                #print("yasa length:",len(yasa_data_eeg))
+                if len(self.yasa_hour_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
+                    # print("length enough")
+                    info_hour = create_info(ch_names=["EEG","EOG"],sfreq = self.sampling_rate, ch_types = ["eeg","eog"])
+                # yasa_data_eeg_reshape = yasa_data_eeg.reshape(1,-1)
+                # yasa_data_eog_reshape = yasa_data_eog.reshape(1,-1)
+                    yasa_hour_data_comb = np.vstack((self.yasa_hour_data_eeg , self.yasa_hour_data_eog))
+                    yasa_hour_data_comb = yasa_hour_data_comb.reshape(2,-1)
+                    raw = RawArray(yasa_hour_data_comb, info)
+                    Yasa_hour_stages = yasa.SleepStaging(raw , eeg_name='EEG', eog_name='EOG').predict()
+                    # print("yasa stage:",Yasa_stages)
+                    # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
+                    last_hour = len(Yasa_hour_stages) -1
+                    # print("last sleep stage:", Yasa_stages[last])
+
+                    if Yasa_hour_stages[last_hour] == 'W':
+                        self.Yasa_hour_sleep_stage = 'Awake'
+                    if Yasa_hour_stages[last_hour] == 'N1' or Yasa_hour_stages[last_hour] == 'N2' or Yasa_hour_stages[last_hour] == 'N3':
+                        self.Yasa_hour_sleep_stage = "NREM"
+                    if Yasa_hour_stages[last_hour] == 'R':
+                        self.Yasa_hour_sleep_stage = "REM"
+                    # print("Yasa sleep stage: " , Yasa_sleep_stage)
+                    #yasa_data_eeg = np.ndarray(0)
+                    if self.yasa_hour_data_eeg > 1080000:
+                        self.yasa_hour_data_eeg = self.yasa_hour_data_eeg[8950:]
+                        # print("yasa length after removal:",len(yasa_data_eeg))
+                        self.yasa_hour_data_eog = self.yasa_hour_data_eog[8950:]
 
 
                 
@@ -332,6 +371,10 @@ class Detector:
                     self.LR_count = 0
                     self.T_count = 0
 
+                
+                
+                
+                
                 #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
                 #nathan's model
                 #pop out the first element
@@ -363,6 +406,21 @@ class Detector:
                 else:
                     self.Yasa_sleep_stage_with_period = "Not_REM_PEROID"
 
+                #yasa hour model
+                #pop out the first element
+                if self.Yasa_hour_sleep_stage_list[0] == "REM":
+                    self.Yasa_hour_REM_cnt-=1
+                self.Yasa_hour_sleep_stage_list.pop(0)
+                #add the latest result
+                if self.Yasa_hour_sleep_stage == "REM":
+                    self.Yasa_hour_REM_cnt+=1
+                self.Yasa_hour_sleep_stage_list.append(self.Yasa_sleep_stage)
+
+                if self.Yasa_hour_REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
+                    self.Yasa_hour_sleep_stage_with_period = "REM_PEROID"
+                else:
+                    self.Yasa_hour_sleep_stage_with_period = "Not_REM_PEROID"
+
 
 
 
@@ -375,7 +433,9 @@ class Detector:
             message = t +": "
             # if self.commandParameters.induction==False:
             # message += "sleep stage: "+ sleep_stage + ", EOG Class: "+str(eog_class)+ '\n'   
-            message += "Nat'a model sleep stage: "+ self.sleep_stage + ", Nat's model sleep Period: "+ self.sleep_stage_with_period + ", Yasa sleep stage: "+ self.Yasa_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_sleep_stage_with_period +  '\n'
+            message += "Nat'a model sleep stage: "+ self.sleep_stage + ", Nat's model sleep Period: "+ self.sleep_stage_with_period 
+            message += ", Yasa sleep stage: "+ self.Yasa_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_sleep_stage_with_period 
+            message += ", Yasa sleep stage: "+ self.Yasa_hour_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_hour_sleep_stage_with_period +  '\n'
             # Store/update REM state in the global variable
             global rem_state
             rem_state = {'state': self.Yasa_sleep_stage_with_period}  
