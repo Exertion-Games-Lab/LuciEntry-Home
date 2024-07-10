@@ -48,6 +48,8 @@ async def checkKillCommands() -> bool:
     else:
         return checkKillCommands()
 
+
+
 async def customSleep(time: int):
     for _ in range(round((time + 1) * 10)):
         if await checkKillCommands():
@@ -75,8 +77,37 @@ async def playSound(soundName: str, durationMilliSeconds: int,volume: int):
     except:
         print(f'No file with name {soundName}')
 
+
+    
+async def checkForEmergencyStop() -> bool:
+    response = requests.get('http://localhost:8080/blockCommands')
+    if response.json() == {}:
+        return False
+    if response.status_code == 200:
+        return response.json()['BLOCK_COMMANDS']
+    else:
+        return checkForEmergencyStop()
+
+async def checkForEmergencyStopRelease() -> bool:
+    response = requests.get('http://localhost:8080/unblockCommands')
+    if response.json() == {}:
+        return False
+    if response.status_code == 200:
+        return response.json()['UNBLOCK_COMMANDS']
+    else:
+        return checkForEmergencyStopRelease() 
+
+
 async def main():
     while True:
-        await fetch_and_execute(3, 'http://localhost:8080')
-        await customSleep(1)
+        emergency = checkForEmergencyStop() 
+        if emergency == False:
+            await fetch_and_execute(3, 'http://localhost:8080')
+            await customSleep(1)
+        
+        if checkForEmergencyStopRelease == True:
+            await fetch_and_execute(3, 'http://localhost:8080')
+            await customSleep(1)
+        
+        
 asyncio.run(main())
