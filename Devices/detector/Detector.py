@@ -37,9 +37,9 @@ class Detector:
             # Synthetic for generating fake data, cyton for using the actual real board
             self.board_id = BoardIds.SYNTHETIC_BOARD.value
         elif board_name =="OPEN_BCI":
-            #self.params.serial_port = "COM6" #WINDOWS
+            self.params.serial_port = "COM4" #WINDOWS
             #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
-            self.params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
+            # self.params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
             self.board_id = BoardIds.CYTON_BOARD.value
         elif board_name =="MUSE_S":
             parser = argparse.ArgumentParser()
@@ -128,7 +128,7 @@ class Detector:
         # eog_graph.show()
         # mean_EOG = 0
         # time_counter = 0
-
+        self.eeg_data = np.ndarray(0)
         self.eog_class = "neutral"
         # LR signal counters
         self.N_count = 0
@@ -143,10 +143,11 @@ class Detector:
         self.yasa_data_eog  = np.ndarray(0)
         self.yasa_hour_data_eeg = np.ndarray(0)
         self.yasa_hour_data_eog  = np.ndarray(0)
+        self.yasa_filename = date.today().strftime("%d_%m_%Y") + '_EEG-log.txt'
         
         # participant and save file data
         participant_name = "Cosmos"
-        self.sleep_data_file_name = date.today().strftime("%d_%m_%Y") + '_'+ participant_name + '_log.txt'
+        self.sleep_data_file_name = date.today().strftime("%d_%m_%Y") + '_' + participant_name + '_log.txt'
 
         #reconnected counter
         self.timeoutCnt = 0
@@ -202,22 +203,23 @@ class Detector:
             if self.board.get_board_data_count() > 8999: #if there is enough samples to calculate sleep stage (3000 samples needed), classify sleep
 
                 # pull new data from the buffer
-                eeg_data = self.board.get_board_data()
-                DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
-                DataFilter.detrend(eeg_data[self.eog_channel_left], DetrendOperations.LINEAR.value)
+                print("start")
+                self.eeg_data = self.board.get_board_data()
+                DataFilter.detrend(self.eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
+                DataFilter.detrend(self.eeg_data[self.eog_channel_left], DetrendOperations.LINEAR.value)
                 
-                self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, eeg_data[self.eeg_channel]))
-                self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, eeg_data[self.eog_channel_left]))
+                self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, self.eeg_data[self.eeg_channel]))
+                self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, self.eeg_data[self.eog_channel_left]))
                 
-                self.yasa_hour_data_eeg  = np.concatenate((self.yasa_hour_data_eeg, eeg_data[self.eeg_channel]))
-                self.yasa_hour_data_eog  = np.concatenate((self.yasa_hour_data_eog, eeg_data[self.eog_channel_left]))
+                self.yasa_hour_data_eeg  = np.concatenate((self.yasa_hour_data_eeg, self.eeg_data[self.eeg_channel]))
+                self.yasa_hour_data_eog  = np.concatenate((self.yasa_hour_data_eog, self.eeg_data[self.eog_channel_left]))
 
                 # process data of nathan's model
 
                 # this peforms some denoising to the data and peforms a spectral analysis to get power spectal density (psd)
-                DataFilter.perform_downsampling(eeg_data[self.eeg_channel], 3, AggOperations.MEDIAN.value)
+                DataFilter.perform_downsampling(self.eeg_data[self.eeg_channel], 3, AggOperations.MEDIAN.value)
                 # DataFilter.detrend(eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
-                psd = DataFilter.get_psd_welch(eeg_data[self.eeg_channel], self.nfft, self.nfft // 2, self.sampling_rate,
+                psd = DataFilter.get_psd_welch(self.eeg_data[self.eeg_channel], self.nfft, self.nfft // 2, self.sampling_rate,
                                         WindowOperations.BLACKMAN_HARRIS.value)
 
                 # the power of each eeg bandwidth is then extracted from psd and added to an array
@@ -249,6 +251,7 @@ class Detector:
                 # yasa_data_eeg_reshape = yasa_data_eeg.reshape(1,-1)
                 # yasa_data_eog_reshape = yasa_data_eog.reshape(1,-1)
                     yasa_data_comb = np.vstack((self.yasa_data_eeg , self.yasa_data_eog))
+
                     yasa_data_comb = yasa_data_comb.reshape(2,-1)
                     raw = RawArray(yasa_data_comb, info)
                     Yasa_stages = yasa.SleepStaging(raw , eeg_name='EEG', eog_name='EOG').predict()
@@ -275,11 +278,17 @@ class Detector:
                 if len(self.yasa_hour_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
                     # print("length enough")
                     info_hour = create_info(ch_names=["EEG","EOG"],sfreq = self.sampling_rate, ch_types = ["eeg","eog"])
-                # yasa_data_eeg_reshape = yasa_data_eeg.reshape(1,-1)
-                # yasa_data_eog_reshape = yasa_data_eog.reshape(1,-1)
-                    yasa_hour_data_comb = np.vstack((self.yasa_hour_data_eeg , self.yasa_hour_data_eog))
+
+                    if os.path.exists(self.yasa_filename): # with current structure open bci needs to reset before an hours dat is collected so it is wiped
+                        data = np.load(self.yasa_filename)
+                        yasa_hour_data_comb = np.vstack((data, np.vstack((self.yasa_hour_data_eeg , self.yasa_hour_data_eog))))
+                        np.save(self.yasa_filename, yasa_hour_data_comb)
+                    else:
+                        yasa_hour_data_comb = np.vstack((self.yasa_hour_data_eeg , self.yasa_hour_data_eog))
+                        np.save(self.yasa_filename, yasa_hour_data_comb)
+
                     yasa_hour_data_comb = yasa_hour_data_comb.reshape(2,-1)
-                    raw = RawArray(yasa_hour_data_comb, info)
+                    raw = RawArray(yasa_hour_data_comb, info_hour)
                     Yasa_hour_stages = yasa.SleepStaging(raw , eeg_name='EEG', eog_name='EOG').predict()
                     # print("yasa stage:",Yasa_stages)
                     # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
@@ -294,24 +303,40 @@ class Detector:
                         self.Yasa_hour_sleep_stage = "REM"
                     # print("Yasa sleep stage: " , Yasa_sleep_stage)
                     #yasa_data_eeg = np.ndarray(0)
-                    if self.yasa_hour_data_eeg > 1080000:
-                        self.yasa_hour_data_eeg = self.yasa_hour_data_eeg[8950:]
-                        # print("yasa length after removal:",len(yasa_data_eeg))
-                        self.yasa_hour_data_eog = self.yasa_hour_data_eog[8950:]
-
+                    # if len(self.yasa_hour_data_eeg) > 1080000:
+                    #     self.yasa_hour_data_eeg = self.ya`sa_hour_data_eeg[8950:]
+                    #     # print("yasa length after removal:",len(yasa_data_eeg))
+                    #     self.yasa_hour_data_eog = self.yasa_hour_data_eog[8950:]
+                print('end')
 
                 
-
-
-
-
-
             else: # else, just keep updating eog stuff
-                time.sleep(0.2)
-                if self.board.get_board_data_count() < 150:
-                    continue
+                time.sleep(0.2) # controlling timing and initialising variables //////////////
+                if self.board.get_board_data_count() < 3000 :
+                    time.sleep(0.8)
+                    if len(self.eeg_data) > 10: #compensation when the openbci reaches it capture limit and resets
+                        # print('eeg length', len(self.eeg_data))
+                        len_test = len(self.eeg_data[self.eeg_channel]) - 2750
+                        dummy_left = self.eeg_data[self.eog_channel_left]
+                        dummy_left= dummy_left[len_test:]
+                        dummy_right = self.eeg_data[self.eog_channel_right]
+                        dummy_right= dummy_right[len_test:]
+                        # print('dummy length', len(dummy_left))
+                    else : # just starting 
+                        continue
                 self.timeoutCnt+=1
-                eog_data = self.board.get_current_board_data(150)
+                eog_data = self.board.get_current_board_data(250)
+                
+                if len(self.eeg_data) > 10:
+                    eog_data_yasa_L = np.concatenate((dummy_left, eog_data[self.eog_channel_left]))
+                    eog_data_yasa_R = np.concatenate((dummy_right, eog_data[self.eog_channel_right]))
+                    yasa_eog_comb = np.vstack((eog_data_yasa_L,eog_data_yasa_R))
+                    yasa_eog_comb = yasa_eog_comb.reshape(2,-1)
+                else :
+                    eog_data_yasa = self.board.get_current_board_data(3000)
+                    yasa_eog_comb = np.vstack((eog_data_yasa[self.eog_channel_left],eog_data_yasa[self.eog_channel_right]))
+                    yasa_eog_comb = yasa_eog_comb.reshape(2,-1)
+
                 # Applying filters to channels
                 DataFilter.detrend(eog_data[self.eog_channel_left], DetrendOperations.LINEAR.value)
                 DataFilter.detrend(eog_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
@@ -320,8 +345,8 @@ class Detector:
                 DataFilter.perform_rolling_filter(eog_data[self.eog_channel_left], 5, AggOperations.MEAN.value)
                 DataFilter.perform_rolling_filter(eog_data[self.eog_channel_right], 5, AggOperations.MEAN.value)
                 #labels
-                eog_data_filtered_left = eog_data[self.eog_channel_left]
-                eog_data_filtered_right = eog_data[self.eog_channel_right]
+                # eog_data_filtered_left = eog_data[self.eog_channel_left]
+                # eog_data_filtered_right = eog_data[self.eog_channel_right]
                 # eog_graph.eog_data_left = eog_data_filtered_left
                 # eog_graph.eog_data_right = eog_data_filtered_right
                 # eog_graph.update_graph(eog_data_filtered_left, eog_data_filtered_right)
@@ -352,8 +377,8 @@ class Detector:
                 print("EOG Class:", eog_class)
 
                     #////////////////////////////////////////////////////////////////////////////////////////////////
-                #yasa rem_dectect             
-                eog_data_yasa = self.board.get_current_board_data(1700)
+                #yasa rem_dectect
+
                 eog_class2 = "neutral"
                 
                 DataFilter.detrend(eog_data_yasa[self.eog_channel_left], DetrendOperations.LINEAR.value)
@@ -363,8 +388,8 @@ class Detector:
                 DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_left], 5, AggOperations.MEDIAN.value)
                 DataFilter.perform_rolling_filter(eog_data_yasa[self.eog_channel_right], 5, AggOperations.MEDIAN.value)
 
-                yasa_eog_comb = np.vstack((eog_data_yasa[self.eog_channel_left],eog_data_yasa[self.eog_channel_right]))
-                yasa_eog_comb = yasa_eog_comb.reshape(2,-1)
+                # yasa_eog_comb = np.vstack((eog_data_yasa[self.eog_channel_left],eog_data_yasa[self.eog_channel_right]))
+                # yasa_eog_comb = yasa_eog_comb.reshape(2,-1)
                 try:
                     rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],self.sampling_rate)
                     # rem = yasa.rem_detect(yasa_eog_comb[0,:],yasa_eog_comb[1,:],
@@ -381,10 +406,10 @@ class Detector:
                     min_left = np.min(loc)
                     max_right = np.max(roc)
                     min_right = np.min(roc)
-                    print("max right  =",max_right)
-                    print("max left  =",max_left)
-                    print("min right  =",min_right)
-                    print("min left  =",min_left)
+                    # print("max right  =",max_right)
+                    # print("max left  =",max_left)
+                    # print("min right  =",min_right)
+                    # print("min left  =",min_left)
                     max_left_id = np.argmax(loc)
                     min_left_id = np.argmin(loc)
                     max_right_id = np.argmax(roc)
@@ -421,14 +446,13 @@ class Detector:
                     self.L_count = 0
 
                 if self.L_count == 1 and eog_class == "right":
-                    self.LR_count_perm += 1
                     self.LR_count += 1
                     self.L_count = 0
                 if self.LR_count == 4: # number of LR signals you would like to receive
                     print("LR signal received !!!")
                     self.LR_count_perm += 1
                     # put global variable saying LR signal confirmed
-                if self.T_count == 70: # period of eogclasses we would like to store
+                if self.T_count == 100: # period of eogclasses we would like to store
                     self.LR_count = 0
                     self.T_count = 0
 
@@ -439,48 +463,48 @@ class Detector:
                 #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
                 #nathan's model
                 #pop out the first element
-                if self.sleep_stage_list[0] == "REM":
-                    self.REM_cnt-=1
-                self.sleep_stage_list.pop(0)
+            if self.sleep_stage_list[0] == "REM":
+                self.REM_cnt-=1
+            self.sleep_stage_list.pop(0)
                 #add the latest result
-                if self.sleep_stage == "REM":
-                    self.REM_cnt+=1
-                self.sleep_stage_list.append(self.sleep_stage)
+            if self.sleep_stage == "REM":
+                self.REM_cnt+=1
+            self.sleep_stage_list.append(self.sleep_stage)
 
-                if self.REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
-                    self.sleep_stage_with_period = "REM_PERIOD"
-                else:
-                    self.sleep_stage_with_period = "Not_REM_PERIOD"
+            if self.REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
+                self.sleep_stage_with_period = "REM_PERIOD"
+            else:
+                self.sleep_stage_with_period = "Not_REM_PERIOD"
 
-                # yasa model
-                #pop out the first element
-                if self.Yasa_sleep_stage_list[0] == "REM":
-                    self.Yasa_REM_cnt-=1
-                self.Yasa_sleep_stage_list.pop(0)
-                #add the latest result
-                if self.Yasa_sleep_stage == "REM":
-                    self.Yasa_REM_cnt+=1
-                self.Yasa_sleep_stage_list.append(self.Yasa_sleep_stage)
+            # yasa model
+            #pop out the first element
+            if self.Yasa_sleep_stage_list[0] == "REM":
+                self.Yasa_REM_cnt-=1
+            self.Yasa_sleep_stage_list.pop(0)
+            #add the latest result
+            if self.Yasa_sleep_stage == "REM":
+                self.Yasa_REM_cnt+=1
+            self.Yasa_sleep_stage_list.append(self.Yasa_sleep_stage)
 
-                if self.Yasa_REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
-                    self.Yasa_sleep_stage_with_period = "REM_PEROID"
-                else:
-                    self.Yasa_sleep_stage_with_period = "Not_REM_PEROID"
+            if self.Yasa_REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
+                self.Yasa_sleep_stage_with_period = "REM_PEROID"
+            else:
+                self.Yasa_sleep_stage_with_period = "Not_REM_PEROID"
 
-                #yasa hour model
-                #pop out the first element
-                if self.Yasa_hour_sleep_stage_list[0] == "REM":
-                    self.Yasa_hour_REM_cnt-=1
-                self.Yasa_hour_sleep_stage_list.pop(0)
-                #add the latest result
-                if self.Yasa_hour_sleep_stage == "REM":
-                    self.Yasa_hour_REM_cnt+=1
-                self.Yasa_hour_sleep_stage_list.append(self.Yasa_sleep_stage)
+            #yasa hour model
+            #pop out the first element
+            if self.Yasa_hour_sleep_stage_list[0] == "REM":
+                self.Yasa_hour_REM_cnt-=1
+            self.Yasa_hour_sleep_stage_list.pop(0)
+            #add the latest result
+            if self.Yasa_hour_sleep_stage == "REM":
+                self.Yasa_hour_REM_cnt+=1
+            self.Yasa_hour_sleep_stage_list.append(self.Yasa_sleep_stage)
 
-                if self.Yasa_hour_REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
-                    self.Yasa_hour_sleep_stage_with_period = "REM_PEROID"
-                else:
-                    self.Yasa_hour_sleep_stage_with_period = "Not_REM_PEROID"
+            if self.Yasa_hour_REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
+                self.Yasa_hour_sleep_stage_with_period = "REM_PEROID"
+            else:
+                self.Yasa_hour_sleep_stage_with_period = "Not_REM_PEROID"
 
 
 
@@ -497,7 +521,7 @@ class Detector:
             message += "Nat'a model sleep stage: "+ self.sleep_stage + ", Nat's model sleep Period: "+ self.sleep_stage_with_period 
             message += ", Yasa sleep stage: "+ self.Yasa_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_sleep_stage_with_period 
             message += ", Yasa sleep stage: "+ self.Yasa_hour_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_hour_sleep_stage_with_period 
-            message += + ", LR signal count: " + self.LR_count_perm  + '\n'
+            message += ", LR signal count: " + str(self.LR_count_perm)  + '\n'
             # Store/update REM state in the global variable
             global rem_state
             rem_state = {'state': self.Yasa_sleep_stage_with_period}  
