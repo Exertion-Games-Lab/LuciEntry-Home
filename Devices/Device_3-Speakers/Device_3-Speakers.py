@@ -100,7 +100,7 @@ async def checkForEmergencyStopRelease() -> bool:
 
 async def main():
     while True:
-        emergency = checkForEmergencyStop() 
+        emergency = await checkForEmergencyStop() 
         if emergency == False:
             await fetch_and_execute(3, 'http://localhost:8080')
             await customSleep(1)
