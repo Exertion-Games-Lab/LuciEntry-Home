@@ -108,11 +108,7 @@ async def main():
         else:
             await playSound('*****',0,0)
             
-        if checkForEmergencyStopRelease == True:
-            await fetch_and_execute(3, 'http://localhost:8080')
-            await customSleep(1)
-        
-
+       
         
         
 asyncio.run(main())
