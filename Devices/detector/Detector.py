@@ -203,7 +203,6 @@ class Detector:
             if self.board.get_board_data_count() > 8999: #if there is enough samples to calculate sleep stage (3000 samples needed), classify sleep
 
                 # pull new data from the buffer
-                print("start")
                 self.eeg_data = self.board.get_board_data()
                 DataFilter.detrend(self.eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
                 DataFilter.detrend(self.eeg_data[self.eog_channel_left], DetrendOperations.LINEAR.value)
@@ -211,8 +210,8 @@ class Detector:
                 self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, self.eeg_data[self.eeg_channel]))
                 self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, self.eeg_data[self.eog_channel_left]))
                 
-                self.yasa_hour_data_eeg  = np.concatenate((self.yasa_hour_data_eeg, self.eeg_data[self.eeg_channel]))
-                self.yasa_hour_data_eog  = np.concatenate((self.yasa_hour_data_eog, self.eeg_data[self.eog_channel_left]))
+                # self.yasa_hour_data_eeg  = np.concatenate((self.yasa_hour_data_eeg, self.eeg_data[self.eeg_channel]))
+                # self.yasa_hour_data_eog  = np.concatenate((self.yasa_hour_data_eog, self.eeg_data[self.eog_channel_left]))
 
                 # process data of nathan's model
 
@@ -275,16 +274,16 @@ class Detector:
             # processing yasa hour model
 
                 #print("yasa length:",len(yasa_data_eeg))
-                if len(self.yasa_hour_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
+                if len(self.yasa_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
                     # print("length enough")
                     info_hour = create_info(ch_names=["EEG","EOG"],sfreq = self.sampling_rate, ch_types = ["eeg","eog"])
 
                     if os.path.exists(self.yasa_filename): # with current structure open bci needs to reset before an hours dat is collected so it is wiped
                         data = np.load(self.yasa_filename)
-                        yasa_hour_data_comb = np.vstack((data, np.vstack((self.yasa_hour_data_eeg , self.yasa_hour_data_eog))))
+                        yasa_hour_data_comb = np.vstack((np.conconate(data[:,0], self.eeg_data[self.eeg_channel])),(np.conconate(data[:,1], self.eeg_data[self.eog_channel_left])))
                         np.save(self.yasa_filename, yasa_hour_data_comb)
                     else:
-                        yasa_hour_data_comb = np.vstack((self.yasa_hour_data_eeg , self.yasa_hour_data_eog))
+                        yasa_hour_data_comb = np.vstack((self.yasa_data_eeg , self.yasa_data_eog))
                         np.save(self.yasa_filename, yasa_hour_data_comb)
 
                     yasa_hour_data_comb = yasa_hour_data_comb.reshape(2,-1)
@@ -303,11 +302,8 @@ class Detector:
                         self.Yasa_hour_sleep_stage = "REM"
                     # print("Yasa sleep stage: " , Yasa_sleep_stage)
                     #yasa_data_eeg = np.ndarray(0)
-                    # if len(self.yasa_hour_data_eeg) > 1080000:
-                    #     self.yasa_hour_data_eeg = self.ya`sa_hour_data_eeg[8950:]
-                    #     # print("yasa length after removal:",len(yasa_data_eeg))
-                    #     self.yasa_hour_data_eog = self.yasa_hour_data_eog[8950:]
-                print('end')
+                    self.yasa_hour_data_eeg = np.ndarray(0)
+                    self.yasa_hour_data_eog  = np.ndarray(0)
 
                 
             else: # else, just keep updating eog stuff
@@ -499,7 +495,7 @@ class Detector:
             #add the latest result
             if self.Yasa_hour_sleep_stage == "REM":
                 self.Yasa_hour_REM_cnt+=1
-            self.Yasa_hour_sleep_stage_list.append(self.Yasa_sleep_stage)
+            self.Yasa_hour_sleep_stage_list.append(self.Yasa_hour_sleep_stage)
 
             if self.Yasa_hour_REM_cnt >= self.TIME_WINDOW * self.accepted_REM_percentage:
                 self.Yasa_hour_sleep_stage_with_period = "REM_PEROID"
