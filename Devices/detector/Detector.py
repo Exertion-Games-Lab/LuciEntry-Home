@@ -143,7 +143,7 @@ class Detector:
         self.yasa_data_eog  = np.ndarray(0)
         self.yasa_hour_data_eeg = np.ndarray(0)
         self.yasa_hour_data_eog  = np.ndarray(0)
-        self.yasa_filename = date.today().strftime("%d_%m_%Y") + '_EEG-log.txt'
+        self.yasa_filename = date.today().strftime("%d_%m_%Y") + '_EEG-log'
         
         # participant and save file data
         participant_name = "Cosmos"
@@ -210,8 +210,8 @@ class Detector:
                 self.yasa_data_eeg  = np.concatenate((self.yasa_data_eeg, self.eeg_data[self.eeg_channel]))
                 self.yasa_data_eog  = np.concatenate((self.yasa_data_eog, self.eeg_data[self.eog_channel_left]))
                 
-                # self.yasa_hour_data_eeg  = np.concatenate((self.yasa_hour_data_eeg, self.eeg_data[self.eeg_channel]))
-                # self.yasa_hour_data_eog  = np.concatenate((self.yasa_hour_data_eog, self.eeg_data[self.eog_channel_left]))
+                yasa_hour_data_comb1 = np.vstack((self.eeg_data[self.eeg_channel] , self.eeg_data[self.eog_channel_left]))
+            
 
                 # process data of nathan's model
 
@@ -243,12 +243,10 @@ class Detector:
             # processing yasa model
 
 
-                #print("yasa length:",len(yasa_data_eeg))
+                print("yasa length:",len(self.yasa_data_eeg))
                 if len(self.yasa_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
-                    # print("length enough")
+                    print("length enough 1 ")
                     info = create_info(ch_names=["EEG","EOG"],sfreq = self.sampling_rate, ch_types = ["eeg","eog"])
-                # yasa_data_eeg_reshape = yasa_data_eeg.reshape(1,-1)
-                # yasa_data_eog_reshape = yasa_data_eog.reshape(1,-1)
                     yasa_data_comb = np.vstack((self.yasa_data_eeg , self.yasa_data_eog))
 
                     yasa_data_comb = yasa_data_comb.reshape(2,-1)
@@ -265,31 +263,39 @@ class Detector:
                         self.Yasa_sleep_stage = "NREM"
                     if Yasa_stages[last] == 'R':
                         self.Yasa_sleep_stage = "REM"
-                    # print("Yasa sleep stage: " , Yasa_sleep_stage)
-                    #yasa_data_eeg = np.ndarray(0)
+                    # print("Yasa sleep stage: " , self.Yasa_sleep_stage)
+                    yasa_data_eeg = np.ndarray(0)
                     self.yasa_data_eeg = self.yasa_data_eeg[8950:]
                     # print("yasa length after removal:",len(yasa_data_eeg))
                     self.yasa_data_eog = self.yasa_data_eog[8950:]
 
-            # processing yasa hour model
+                    # processing yasa hour model
 
-                #print("yasa length:",len(yasa_data_eeg))
-                if len(self.yasa_data_eeg) > 90000: #(storage arrays need to be wiped each five mins)
-                    # print("length enough")
-                    info_hour = create_info(ch_names=["EEG","EOG"],sfreq = self.sampling_rate, ch_types = ["eeg","eog"])
+                    if os.path.exists(self.yasa_filename + '.npy'): # with current structure open bci needs to reset before an hours dat is collected so it is wiped
+                        data = np.load(self.yasa_filename +'.npy')
+                        
+                        yasa_hour_eog = data[0,:].tolist() 
+                        yasa_hour_eog.extend(yasa_hour_data_comb1[0])  # Append elements
+                        yasa_eog_array= np.array(yasa_hour_eog)
 
-                    if os.path.exists(self.yasa_filename): # with current structure open bci needs to reset before an hours dat is collected so it is wiped
-                        data = np.load(self.yasa_filename)
-                        yasa_hour_data_comb = np.vstack((np.conconate(data[:,0], self.eeg_data[self.eeg_channel])),(np.conconate(data[:,1], self.eeg_data[self.eog_channel_left])))
+
+                        yasa_hour_eeg = data[1,:].tolist() 
+                        yasa_hour_eeg.extend(yasa_hour_data_comb1[1])  # Append elements
+                        yasa_eeg_array= np.array(yasa_hour_eeg)
+
+                        print("eog_array:",np.shape(yasa_eog_array))
+                        yasa_hour_data_comb = np.vstack((yasa_eog_array , yasa_eeg_array))
+                        # yasa_hour_data_comb2 = np.concatenate(datanp_array,  datatest)
+                        print('yasa_night_length',np.shape(yasa_hour_data_comb))
+
                         np.save(self.yasa_filename, yasa_hour_data_comb)
                     else:
                         yasa_hour_data_comb = np.vstack((self.yasa_data_eeg , self.yasa_data_eog))
                         np.save(self.yasa_filename, yasa_hour_data_comb)
-
                     yasa_hour_data_comb = yasa_hour_data_comb.reshape(2,-1)
-                    raw = RawArray(yasa_hour_data_comb, info_hour)
+                    raw = RawArray(yasa_hour_data_comb, info)
                     Yasa_hour_stages = yasa.SleepStaging(raw , eeg_name='EEG', eog_name='EOG').predict()
-                    # print("yasa stage:",Yasa_stages)
+                    print("yasa stage:",Yasa_stages)
                     # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
                     last_hour = len(Yasa_hour_stages) -1
                     # print("last sleep stage:", Yasa_stages[last])
@@ -301,9 +307,11 @@ class Detector:
                     if Yasa_hour_stages[last_hour] == 'R':
                         self.Yasa_hour_sleep_stage = "REM"
                     # print("Yasa sleep stage: " , Yasa_sleep_stage)
-                    #yasa_data_eeg = np.ndarray(0)
-                    self.yasa_hour_data_eeg = np.ndarray(0)
-                    self.yasa_hour_data_eog  = np.ndarray(0)
+
+
+                    self.yasa_data_eeg = self.yasa_data_eeg[8950:]
+                    # print("yasa length after removal:",len(yasa_data_eeg))
+                    self.yasa_data_eog = self.yasa_data_eog[8950:]
 
                 
             else: # else, just keep updating eog stuff
@@ -516,7 +524,7 @@ class Detector:
             # message += "sleep stage: "+ sleep_stage + ", EOG Class: "+str(eog_class)+ '\n'   
             message += "Nat'a model sleep stage: "+ self.sleep_stage + ", Nat's model sleep Period: "+ self.sleep_stage_with_period 
             message += ", Yasa sleep stage: "+ self.Yasa_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_sleep_stage_with_period 
-            message += ", Yasa sleep stage: "+ self.Yasa_hour_sleep_stage + ", Yasa Sleep Period: "+ self.Yasa_hour_sleep_stage_with_period 
+            message += ", Yasa hour sleep stage: "+ self.Yasa_hour_sleep_stage + ", Yasa hour Sleep Period: "+ self.Yasa_hour_sleep_stage_with_period 
             message += ", LR signal count: " + str(self.LR_count_perm)  + '\n'
             # Store/update REM state in the global variable
             global rem_state
