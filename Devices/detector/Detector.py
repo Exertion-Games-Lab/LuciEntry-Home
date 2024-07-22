@@ -291,7 +291,7 @@ class Detector:
                 min_right_id = np.argmin(eog_data[self.eog_channel_right])
                 
                 if max_right < 500 and max_left < 500:
-                    if abs(max_right_id - min_left_id) < 10 or abs(max_left_id - min_right_id) < 10:
+                    if abs(max_right_id - min_left_id) < 20 or abs(max_left_id - min_right_id) < 20:
                         if max_left_id < max_right_id and min_left_id > min_right_id:
                             eog_class = "right"
                         if max_left_id > max_right_id and min_left_id < min_right_id:
