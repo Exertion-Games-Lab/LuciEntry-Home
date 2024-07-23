@@ -137,7 +137,8 @@ class Detector:
         
 
         # yasa counter
-        self.sleep_stage_array = np.empty(2, dtype=object)
+        self.sleep_stage_array = np.ndarray(0)
+        self.stager_info = create_info(ch_names=["EEG"],sfreq = self.sampling_rate, ch_types = ["eeg"])
         self.started_staging = 0
         self.yasa_filename = date.today().strftime("%d_%m_%Y") + '_EEG-log'
         
@@ -195,31 +196,24 @@ class Detector:
                 # pull new data from the buffer
                 self.eeg_data = self.board.get_board_data()
                 DataFilter.detrend(self.eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
-                DataFilter.detrend(self.eeg_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
+                # DataFilter.detrend(self.eeg_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
                 if self.started_staging == 1:
-                    self.sleep_stage_array[0] = np.concatenate((self.sleep_stage_array[0], self.eeg_data[self.eeg_channel]))
-                    self.sleep_stage_array[1] = np.concatenate((self.sleep_stage_array[1], self.eeg_data[self.eog_channel_right]))
+                    self.sleep_stage_array = np.concatenate((self.sleep_stage_array, self.eeg_data[self.eeg_channel]))
+                    # self.sleep_stage_array[1] = np.concatenate((self.sleep_stage_array[1], self.eeg_data[self.eog_channel_right]))
                     print("sleep stage extended",np.shape(self.sleep_stage_array))
-                    print('eeg length', len(self.sleep_stage_array[0]))
-                    print('eog length', len(self.sleep_stage_array[1]))
                 else:
 
-                    self.sleep_stage_array[0] = self.eeg_data[self.eeg_channel]
-                    self.sleep_stage_array[1] = self.eeg_data[self.eog_channel_right]
-                    print('eeg length', len(self.sleep_stage_array[0]))
-                    print('eog length', len(self.sleep_stage_array[1]))
+                    self.sleep_stage_array = self.eeg_data[self.eeg_channel]
+                    # self.sleep_stage_array[1] = self.eeg_data[self.eog_channel_right]
+                    # print('eeg length', len(self.sleep_stage_array[0]))
+                    # print('eog length', len(self.sleep_stage_array[1]))
                 
-                    print('yasa_array_test',len(self.sleep_stage_array[0]))
+                    print('yasa_array_test',len(self.sleep_stage_array))
                     self.started_staging = 1
-                if len(self.sleep_stage_array[0]) > 90000: #(storage arrays need to be wiped each five mins)
-                    print("length enough 1 ")
-                    info = create_info(ch_names=["EEG","EOG"],sfreq = self.sampling_rate, ch_types = ["eeg","eog"])
+                if len(self.sleep_stage_array) > 90000: #(storage arrays need to be wiped each five mins)
 
-                    array_for_yasa = np.vstack((self.sleep_stage_array[0],self.sleep_stage_array[1]))
-                    print('array shape', np.shape(array_for_yasa))
-                    array_for_yasa.reshape(2,-1)
-                    raw = RawArray(array_for_yasa, info)
-                    Yasa_hour_stages = yasa.SleepStaging(raw , eeg_name='EEG', eog_name='EOG').predict()
+                    raw = RawArray((self.sleep_stage_array.reshape(1,-1)), self.stager_info) #might need to reshape .reshape(1,-1)
+                    Yasa_hour_stages = yasa.SleepStaging(raw , eeg_name='EEG').predict()
                     print("yasa stage:",Yasa_hour_stages)
                     # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
                     last_hour = len(Yasa_hour_stages) -1
