@@ -37,7 +37,7 @@ class Detector:
             # Synthetic for generating fake data, cyton for using the actual real board
             self.board_id = BoardIds.SYNTHETIC_BOARD.value
         elif board_name =="OPEN_BCI":
-            self.params.serial_port = "COM4" #WINDOWS
+            self.params.serial_port = "COM3" #WINDOWS
             #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
             # self.params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
             self.board_id = BoardIds.CYTON_BOARD.value
@@ -148,7 +148,7 @@ class Detector:
 
         #reconnected counter
         self.timeoutCnt = 0
-        self.TIMEOUT_THRESHOLD = 1901
+        self.TIMEOUT_THRESHOLD = 100
 
         #calculate REM every TIME_WINDOW
         self.TIME_WINDOW = 120
@@ -261,7 +261,9 @@ class Detector:
                 DataFilter.perform_bandpass(eog_data[self.eog_channel_right], 150, 0.5, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
                 DataFilter.perform_rolling_filter(eog_data[self.eog_channel_left], 5, AggOperations.MEAN.value)
                 DataFilter.perform_rolling_filter(eog_data[self.eog_channel_right], 5, AggOperations.MEAN.value)
-                #labels
+                
+                
+                #graph labels 
                 # eog_data_filtered_left = eog_data[self.eog_channel_left]
                 # eog_data_filtered_right = eog_data[self.eog_channel_right]
                 # eog_graph.eog_data_left = eog_data_filtered_left
@@ -275,10 +277,7 @@ class Detector:
                 eog_class = "neutral"
 
                 max_left = np.max(eog_data[self.eog_channel_left])
-                min_left = np.min(eog_data[self.eog_channel_left])
                 max_right = np.max(eog_data[self.eog_channel_right])
-                min_right = np.min(eog_data[self.eog_channel_right])
-
                 max_left_id = np.argmax(eog_data[self.eog_channel_left])
                 min_left_id = np.argmin(eog_data[self.eog_channel_left])
                 max_right_id = np.argmax(eog_data[self.eog_channel_right])
@@ -366,8 +365,9 @@ class Detector:
                     self.LR_count += 1
                     self.L_count = 0
                 if self.LR_count == 4: # number of LR signals you would like to receive
-                    print("LR signal received !!!")
+                    print("LR signal received !!!") #turn into confirmation signal later
                     self.LR_count_perm += 1
+                    self.LR_count = 0
                     # put global variable saying LR signal confirmed
                 if self.T_count == 100: # period of eogclasses we would like to store
                     self.LR_count = 0
