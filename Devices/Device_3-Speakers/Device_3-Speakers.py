@@ -21,13 +21,12 @@ def fetch_next_command(device_id, base_url):
 async def execute_instruction(instruction):
     code = instruction['code']
     payload = instruction['payload']
-    
     if code == 3:
         print(f'Executing instruction 3 with payload {payload}')
         soundName = payload['soundName']
         durationMilliSeconds = payload['durationMillis']
         volume = payload['volume']
-        await playSound(soundName, durationMilliSeconds,volume)
+        await playSound(soundName, durationMilliSeconds, volume)
     else:
         print(f'Unknown instruction code {code}. Ignoring.')
 
@@ -48,37 +47,33 @@ async def checkKillCommands() -> bool:
     else:
         return checkKillCommands()
 
-
-
 async def customSleep(time: int):
     for _ in range(round((time + 1) * 10)):
         if await checkKillCommands():
             return
         await asyncio.sleep(0.1)
-        
+
 async def set_volume(volume: int):
     system = platform.system()
     if system == 'Windows':
-        os.system(f"nircmd.exe setsysvolume {volume * 65535 // 100}")
-    elif system == 'Darwin':  # macOS
+        os.system(f'nircmd.exe setsysvolume {volume * 65535 // 100}')
+    elif system == 'Darwin':
         os.system(f"osascript -e 'set volume output volume {volume}'")
     elif system == 'Linux':
-        os.system(f"amixer -D pulse sset Master {volume}%")
+        os.system(f'amixer -D pulse sset Master {volume}%')
     else:
-        print("Unsupported OS")
+        print('Unsupported OS')
 
-async def playSound(soundName: str, durationMilliSeconds: int,volume: int):
+async def playSound(soundName: str, durationMilliSeconds: int, volume: int):
     durationSeconds = durationMilliSeconds / 1000
-    print(f"Playing sound {soundName} at volume {volume}")
+    print(f'Playing sound {soundName} at volume {volume}')
     try:
         await set_volume(volume)
-        playsound(f'./mp3/{soundName}', block=False)
+        playsound(f'./mp3/{soundName}')
         await customSleep(durationSeconds)
     except:
-        print(f'No file with name {soundName}')
+        print(f'There is something wrong with playing {soundName}')
 
-
-    
 async def checkForEmergencyStop() -> bool:
     response = requests.get('http://localhost:8080/blockCommands')
     if response.json() == {}:
@@ -95,20 +90,14 @@ async def checkForEmergencyStopRelease() -> bool:
     if response.status_code == 200:
         return response.json()['UNBLOCK_COMMANDS']
     else:
-        return checkForEmergencyStopRelease() 
-
+        return checkForEmergencyStopRelease()
 
 async def main():
-    
     while True:
-        emergency = await checkForEmergencyStop() 
+        emergency = await checkForEmergencyStop()
         if emergency == False:
             await fetch_and_execute(3, 'http://localhost:8080')
             await customSleep(1)
         else:
-            await playSound('*****',0,0)
-            
-       
-        
-        
+            await playSound('*****', 0, 0)
 asyncio.run(main())
