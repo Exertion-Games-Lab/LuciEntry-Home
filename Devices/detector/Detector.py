@@ -37,9 +37,9 @@ class Detector:
             # Synthetic for generating fake data, cyton for using the actual real board
             self.board_id = BoardIds.SYNTHETIC_BOARD.value
         elif board_name =="OPEN_BCI":
-            self.params.serial_port = "COM3" #WINDOWS
+            #self.params.serial_port = "COM3" #WINDOWS
             #params.serial_port = "/dev/cu.usbserial-DM00D4TL" #MAC
-            # self.params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
+            self.params.serial_port = "/dev/ttyUSB0" # Pi or Linux 
             self.board_id = BoardIds.CYTON_BOARD.value
         elif board_name =="MUSE_S":
             parser = argparse.ArgumentParser()
@@ -148,7 +148,7 @@ class Detector:
 
         #reconnected counter
         self.timeoutCnt = 0
-        self.TIMEOUT_THRESHOLD = 100
+        self.TIMEOUT_THRESHOLD = 1901
 
         #calculate REM every TIME_WINDOW
         self.TIME_WINDOW = 120
