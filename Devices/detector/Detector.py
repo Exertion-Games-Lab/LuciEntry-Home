@@ -403,7 +403,7 @@ class Detector:
             # if self.commandParameters.induction==False:
             # message += "sleep stage: "+ sleep_stage + ", EOG Class: "+str(eog_class)+ '\n'   
             message += "yasa model sleep stage: "+ self.sleep_stage + ", yasa model sleep Period: "+ self.sleep_stage_with_period 
-            message += ", LR signal count: " + str(self.LR_count_perm)  + '\n'
+            message += ", LR signal count: " + str(self.LR_count)  + '\n'
             # Store/update REM state in the global variable
             global rem_state
             rem_state = {'state': self.sleep_stage_with_period}  
