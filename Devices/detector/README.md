@@ -23,7 +23,7 @@ This will compile the core module for your Raspberry Pi architecture.
 
 4. **Install the Python binding**
 ```
-cd python-package
+cd python_package
 python3 -m pip install -e .
 ```
 The `-e` flag installs the package in editable mode, allowing you to modify the source code and have the changes take effect immediately.
