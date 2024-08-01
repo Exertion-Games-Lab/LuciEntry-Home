@@ -12,7 +12,7 @@
 const int LEDPower = 4;
 const int LEDWiFi = 0;
 const int LEDEmergency = 2;
-const int Relay = 14;
+const int Relay = 13;
 
 // Local Variables
 bool emergencyState = false;
@@ -24,9 +24,9 @@ int ID = 2;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // WIFI Details
-const char* SSID = "ORBI80";
-const char* PASSWORD = "classychair864";
-const String IP_ADDRESS = "192.168.1.41";
+const char* SSID = "XGL1";
+const char* PASSWORD = "qwerty123";
+const String IP_ADDRESS = "192.168.12.169";
 const String URL = "http://" + IP_ADDRESS + ":8080/";
 
 // Enums
