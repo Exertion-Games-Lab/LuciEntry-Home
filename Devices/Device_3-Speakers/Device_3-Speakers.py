@@ -93,6 +93,7 @@ async def checkForEmergencyStopRelease() -> bool:
         return checkForEmergencyStopRelease()
 
 async def main():
+    print("This is the home's speaker")
     while True:
         emergency = await checkForEmergencyStop()
         if emergency == False:
