@@ -151,7 +151,7 @@ class Detector:
         self.TIMEOUT_THRESHOLD = 1901
 
         #calculate REM every TIME_WINDOW
-        self.TIME_WINDOW = 120
+        self.TIME_WINDOW = 600
         #how much percentage can be count as a real REM
         self.accepted_REM_percentage = 0.6
         #list of sleep stage within last TIME_PERIOD
@@ -377,9 +377,9 @@ class Detector:
                 
                 
                 
-                #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
-                #nathan's model
-                #pop out the first element
+            #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
+            #nathan's model
+            #pop out the first element
             if self.sleep_stage_list[0] == "REM":
                 self.REM_cnt-=1
             self.sleep_stage_list.pop(0)
