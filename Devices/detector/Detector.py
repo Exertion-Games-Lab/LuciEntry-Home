@@ -151,7 +151,7 @@ class Detector:
         self.TIMEOUT_THRESHOLD = 1901
 
         #calculate REM every TIME_WINDOW
-        self.TIME_WINDOW = 600
+        self.TIME_WINDOW = 450
         #how much percentage can be count as a real REM
         self.accepted_REM_percentage = 0.6
         #list of sleep stage within last TIME_PERIOD
