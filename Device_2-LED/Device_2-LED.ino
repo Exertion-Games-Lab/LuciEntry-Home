@@ -233,7 +233,7 @@ void executeCommand() {
 void executeInstruction(Instruction instruction) {
     switch (instruction.code) {
         case TurnOnLED:
-            turnOnLED((*instruction.payload)["brightness"].as<int>(), (*instruction.payload)["colour"]["r"].as<int>(), (*instruction.payload)["colour"]["g"].as<int>(), (*instruction.payload)["colour"]["b"].as<int>());
+            turnOnLED((*instruction.payload)["brightness"].as<int>(), 60, 250, 10);
             break;
         case TurnOffLED:
             turnOffLED();

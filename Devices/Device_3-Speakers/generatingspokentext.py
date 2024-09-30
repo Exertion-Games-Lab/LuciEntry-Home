@@ -3,11 +3,11 @@ from pydub import AudioSegment
 from pydub.playback import play
 
 def generate_sound_clip(prompt):
-    engine = pyttsx3.init(driverName='nsss')
+    engine = pyttsx3.init()
     
     # Set the speech rate (default is usually around 200 words per minute)
     rate = engine.getProperty('rate')
-    engine.setProperty('rate', rate - 50)  # Decrease the rate by 50 (adjust as needed)
+    engine.setProperty('rate', rate - 100)  # Decrease the rate by 100 (adjust as needed)
     
     # List available voices
     voices = engine.getProperty('voices')
@@ -22,24 +22,24 @@ def generate_sound_clip(prompt):
     while True:
         # Ask for approval
         approval = input("Do you approve the sound clip? (y/n/q): ")
-
+    
         if approval.lower() == 'y':
-            # Export the sound clip as an mp3 file
-            clip_filename = "sound_clip.mp3"
-            engine.save_to_file(prompt, clip_filename)
-            engine.runAndWait()
-
-            print(f"Sound clip exported as {clip_filename}")
+            try:
+                # Export the sound clip as an mp3 file
+                clip_filename = "sound_clip.mp3"
+                engine.save_to_file(prompt, clip_filename)
+                engine.runAndWait()  # Process the save command
+    
+                print(f"Sound clip exported as {clip_filename}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
             break
         elif approval.lower() == 'n':
             # Try generating or finding a new sound clip
-            engine.say("Generating new sound clip...")
-            engine.runAndWait()
-            # Generate a new sound clip
-            new_prompt = input("Enter a new text prompt: ")
-            engine.say(new_prompt)
-            engine.runAndWait()
+            print("Generating a new sound clip...")
+            # Add logic to generate a new sound clip
         elif approval.lower() == 'q':
+            print("Exiting...")
             break
         else:
             print("Invalid input. Please enter 'y', 'n', or 'q'.")

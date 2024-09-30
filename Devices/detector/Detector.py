@@ -28,6 +28,7 @@ class Detector:
     def __init__(self, board_name = "SYNTHETIC", commandParameters = None):
         ## Init board and streaming params 
         self.params = BrainFlowInputParams()
+        
 
         # Identify serial port location of Wifi dongle
         # if you are using windows or mac, you will need to change below to your specific serial port directiory
@@ -84,13 +85,13 @@ class Detector:
             self.eog_channel = self.channels[2]
         else:
             self.eeg_channel = self.channels[0]
-            print('eeg channel nuber=', self.channels[0] )
+            print('eeg channel number=', self.channels[0] )
             self.eog_channel = self.channels[2]
             #Rohit's EOG classifier
             self.eog_channel_left = self.channels[2] #left electrode Channel 3
-            print('eog channel nuber=', self.channels[2] )
+            print('eog channel number=', self.channels[2] )
             self.eog_channel_right = self.channels [1] #right electrode Channel 2
-            print('eog channel nuber=', self.channels[1] )
+            print('eog channel number=', self.channels[1] )
 
 
         self.sleep_stage = 'Awake'
@@ -197,6 +198,7 @@ class Detector:
 
                 # pull new data from the buffer
                 self.eeg_data = self.board.get_board_data()
+
                 DataFilter.detrend(self.eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
                 # DataFilter.detrend(self.eeg_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
                 if self.started_staging == 1:
