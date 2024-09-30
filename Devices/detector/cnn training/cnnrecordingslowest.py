@@ -102,8 +102,8 @@ class Detector:
         self.person_name = 'Cosmos'
         self.current_file_path = os.path.dirname(os.path.abspath(__file__))
         self.data_folder = os.path.join(self.current_file_path, "cnn eog data", self.person_name)
-        self.raw_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_raw_data.json")
-        self.fil_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_fil_data.json")
+        self.raw_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_raw_slow_data.json")
+        self.fil_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_fil_slow_data.json")
         os.makedirs(self.data_folder, exist_ok=True)
 
 
@@ -147,25 +147,33 @@ class Detector:
                 time.sleep(0.5) # controlling timing and initialising variables //////////////
                 self.timeoutCnt+=1
                 # creating initial dummy data dummy data array for rolling time window and filter size
-                if self.timeoutCnt % 3 == 1:
+                if self.timeoutCnt % 4 == 1:
                     label = "Left"
                     print("""
                     _.-"/______________________/////
                     `'-.\~~~~~~~~~~~~~~~~~~~~~~\\\\\
                     """)
-                elif self.timeoutCnt % 3 == 2:
+                elif self.timeoutCnt % 4 == 2:
+                    label = "Neutral"
+                    print("""
+                       ^
+                      ^^^
+                     ^^^^^
+                    ^^^^^^^      
+                    """)
+                elif self.timeoutCnt % 4 == 3:
                     label = "Right"
                     print("""
                     \\\\\______________________\`-._
                     /////~~~~~~~~~~~~~~~~~~~~~~/.-'`
                     """)
                 else: 
-                    lebel = "Neutral"
+                    label = "Neutral"
                     print("""
-                               ^
-                              ^^^
-                             ^^^^^
-                            ^^^^^^^      
+                       ^
+                      ^^^
+                     ^^^^^
+                    ^^^^^^^      
                     """)
                 # time.sleep(0.5) # compensate for closed eyes test where someone tells you which way to look
                 time.sleep(0.3) # for open bci to catch up
