@@ -13,7 +13,7 @@ find_folder_path() {
         SERVER_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Server" 2>/dev/null | head -n 1)
         #COMMAND_SCRIPTS_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Command-Scripts" 2>/dev/null | head -n 1)
         DTECTOR_SCRIPTS_FOLDER=$(find "$SYSTEM_PATH" -type d -name "detector" 2>/dev/null | head -n 1)
-        SPEAKERS_DEVICES_FOLDER=$(find / -type d -name "Device_3-Speakers" 2>/dev/null | head -n 1)
+        SPEAKERS_DEVICES_FOLDER=$(find "$SYSTEM_PATH" -type d -name "Device_3-Speakers" 2>/dev/null | head -n 1)
     else
         echo "LuciEntry-Home folder not found."
         exit 1
