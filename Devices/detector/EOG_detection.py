@@ -10,6 +10,8 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, DetrendOperations, FilterTypes, AggOperations, WindowOperations
 from threading import Thread
 import os
+import matplotlib.pyplot as plt
+from scipy.signal import stft
 
 # Flask app setup
 app = Flask(__name__)
@@ -20,26 +22,15 @@ rem_state = {}
 # Parameters for REM calculation and EOG detection
 TIME_WINDOW = 120  # Time window to calculate REM
 ACCEPTED_REM_PERCENTAGE = 0.6  # Threshold to count REM
-AMPLITUDE_HIGH_THRESHOLD = 80  # High threshold for eye movement detection
+AMPLITUDE_HIGH_THRESHOLD = 80  # High threshold for eye movement detection (dynamic now)
 AMPLITUDE_LOW_THRESHOLD = 10   # Low threshold for noise filtering
-AMPLITUDE_RESET_THRESHOLD = 5  # Threshold to reset after a movement
-TIMER_THRESHOLD = 250  # Timer for eye movement state
+DERIVATIVE_THRESHOLD = 17  # Threshold for derivative to detect edges
 sampling_rate = 250  # Adjust based on board setup
-
-# Function to classify amplitude levels based on thresholds
-def classify_amplitude(value):
-    if value >= AMPLITUDE_HIGH_THRESHOLD:
-        return "High"
-    else:
-        return "Low"
-
-# Function to calculate the derivative of the signal
-def calculate_derivative(current, previous, n=1):
-    return (current - previous) / n
 
 class EOGDetector:
     def __init__(self, board_name="OPEN_BCI"):
-        self.state = "INITIAL"
+        self.state_left = "Initial"
+        self.state_right = "Initial"
         self.eye_direction = "Neutral"
         self.sleep_stage = "Awake"
         self.sleep_stage_list = ["NaN"] * TIME_WINDOW  # Store sleep stages over a time window
@@ -48,7 +39,7 @@ class EOGDetector:
 
         # BrainFlow Setup
         self.params = BrainFlowInputParams()
-        self.params.serial_port = "COM3"  # Modify based on your system setup
+        self.params.serial_port = "COM4"  # Modify based on your system setup
         self.board_id = BoardIds.CYTON_BOARD.value
         self.board = BoardShim(self.board_id, self.params)
         self.eeg_channel = BoardShim.get_eeg_channels(self.board_id)[0]
@@ -65,18 +56,29 @@ class EOGDetector:
         self.board.prepare_session()
         self.board.start_stream()
 
-        # State variables for movement detection
-        self.previous_left_signal = 0
-        self.previous_right_signal = 0
-
     def preprocess_signal(self, signal):
         """
-        Preprocess EOG signal using bandpass and rolling average filters.
+        Preprocess EOG signal using bandpass, notch (perform_notch), and rolling average filters.
         """
         DataFilter.detrend(signal, DetrendOperations.LINEAR.value)
-        DataFilter.perform_bandpass(signal, sampling_rate, 0.1, 30.0, 4, FilterTypes.BUTTERWORTH.value, 0)
-        DataFilter.perform_rolling_filter(signal, 3, AggOperations.MEAN.value)
+        # Adjusted bandpass filter: Allow frequencies between 0.5 and 15 Hz
+        DataFilter.perform_bandpass(signal, self.sampling_rate, 0.5, 15.0, 4, FilterTypes.BUTTERWORTH.value, 0)
+        # Notch filter to remove powerline noise (50 Hz or 60 Hz depending on your region)
+        #DataFilter.perform_fft(signal, self.sampling_rate, 50.0, 4.0, FilterTypes.BUTTERWORTH.value)  # Use perform_notch for powerline interference
+        # Increased rolling filter window to reduce noise further
+        DataFilter.perform_rolling_filter(signal, 7, AggOperations.MEAN.value)
+
         return signal
+
+    def dynamic_threshold(self, signal):
+        """
+        Dynamically calculate amplitude thresholds based on the signal's recent activity.
+        """
+        rms_value = np.sqrt(np.mean(np.square(signal[-100:])))  # RMS of the last 100 samples
+        # Calculate thresholds based on recent activity with an upper and lower bound
+        high_threshold = max(80, rms_value * 3)  # Increased multiplier for more distinct detection
+        low_threshold = min(20, rms_value * 0.5)  # A lower bound to filter noise
+        return high_threshold, low_threshold
 
     def read_eog_signal(self):
         """
@@ -93,36 +95,81 @@ class EOGDetector:
 
         return left_signal, right_signal
 
+    def smooth_signal(self, signal, window_size=5):
+        """
+        Apply moving average to smooth the signal.
+        """
+        return np.convolve(signal, np.ones(window_size) / window_size, mode='valid')
+
+    def process_channel_state(self, amplitude_signal, derivative_signal, state):
+        """
+        Improved logic to handle state transitions with smoothing, debounce, and adaptive hysteresis.
+        """
+        movement_detected = False
+        high_threshold, low_threshold = self.dynamic_threshold(amplitude_signal)
+        hysteresis_window = 5  # Increase hysteresis window for noise reduction
+
+        for i in range(len(derivative_signal)):
+            if i + 1 >= len(amplitude_signal):
+                break
+
+            amplitude = amplitude_signal[i + 1]
+            derivative = derivative_signal[i]
+
+            # Introduce a hold state to debounce spurious transitions
+            if state == 'Initial':
+                if derivative > DERIVATIVE_THRESHOLD and amplitude >= high_threshold:
+                    state = 'Hold'  # Enter hold state to wait for confirmation
+            elif state == 'Hold':
+                # Wait for a few samples to confirm movement
+                if i < len(derivative_signal) - hysteresis_window and amplitude >= high_threshold:
+                    state = 'InitialEdge+'
+                else:
+                    state = 'Initial'  # Reset if no sustained movement is detected
+            elif state == 'InitialEdge+':
+                if derivative < -DERIVATIVE_THRESHOLD:
+                    state = 'FinalEdge'
+            elif state == 'FinalEdge':
+                if amplitude <= low_threshold:
+                    movement_detected = True
+                    state = 'Initial'  # Reset state after detection
+                else:
+                    state = 'InitialEdge+'
+            else:
+                state = 'Initial'
+
+        return state, movement_detected
+
     def detect_eye_direction(self, left_eog, right_eog):
         """
-        Detect eye movement direction using signal amplitude and derivative (slope).
-        Incorporates stages like InitialEdge and FinalEdge detection based on threshold crossing.
+        Detect eye movement direction using amplitude, derivative, and signal symmetry.
         """
-        max_left = np.max(left_eog)
-        max_right = np.max(right_eog)
+        # Compute derivatives
+        left_derivative = np.diff(left_eog)
+        right_derivative = np.diff(right_eog)
 
-        # Derivative calculation (slope)
-        derivative_left = calculate_derivative(max_left, self.previous_left_signal)
-        derivative_right = calculate_derivative(max_right, self.previous_right_signal)
+        # Smooth signals before detecting movements
+        left_eog = self.smooth_signal(left_eog)
+        right_eog = self.smooth_signal(right_eog)
 
-        # Classify the amplitude levels using thresholds
-        left_classification = classify_amplitude(max_left)
-        right_classification = classify_amplitude(max_right)
+        # Process left channel
+        self.state_left, movement_detected_left = self.process_channel_state(
+            left_eog, left_derivative, self.state_left)
 
-        # Detect eye movement direction based on threshold crossing and derivative
-        if left_classification == "High" and derivative_left > AMPLITUDE_LOW_THRESHOLD:
-            self.eye_direction = "Left"
-            self.state = "InitialEdge+"  # Detected initial edge for left eye movement
-        elif right_classification == "High" and derivative_right > AMPLITUDE_LOW_THRESHOLD:
-            self.eye_direction = "Right"
-            self.state = "InitialEdge+"  # Detected initial edge for right eye movement
-        elif abs(derivative_left) < AMPLITUDE_RESET_THRESHOLD and abs(derivative_right) < AMPLITUDE_RESET_THRESHOLD:
-            self.eye_direction = "Neutral"
-            self.state = "FinalEdge"  # Detected final edge (return to neutral)
+        # Process right channel
+        self.state_right, movement_detected_right = self.process_channel_state(
+            right_eog, right_derivative, self.state_right)
 
-        # Store previous signal values for the next iteration
-        self.previous_left_signal = max_left
-        self.previous_right_signal = max_right
+        # Check signal symmetry to improve blink detection
+        signal_diff = np.abs(left_eog - right_eog)
+        if np.mean(signal_diff) < 10:  # Blink detection based on signal symmetry
+            self.eye_direction = 'Blink'
+        elif movement_detected_left and not movement_detected_right:
+            self.eye_direction = 'Right'
+        elif movement_detected_right and not movement_detected_left:
+            self.eye_direction = 'Left'
+        else:
+            self.eye_direction = 'Neutral'
 
     def process_eeg_data(self, eeg_data):
         """
@@ -158,7 +205,7 @@ class EOGDetector:
         """
         Use Yasa and the SVM model to classify sleep stage over a rolling time window.
         """
-        if self.board.get_board_data_count() > 8999:
+        if self.board.get_board_data_count() > 89999:
             eeg_data = self.board.get_board_data()  # Get the full board data
             self.process_eeg_data(eeg_data)
 
@@ -205,7 +252,7 @@ class EOGDetector:
                 current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 print(f"{current_time} | Sleep Stage: {self.sleep_stage} | Eye Movement: {self.eye_direction} | REM Period: {rem_period}")
 
-            time.sleep(0.5)  # Adjust delay for processing speed
+            time.sleep(0.2)  # Adjust delay for processing speed
 
 # Flask API for interacting with the EOG detector
 @app.route('/update_rem', methods=['POST'])
