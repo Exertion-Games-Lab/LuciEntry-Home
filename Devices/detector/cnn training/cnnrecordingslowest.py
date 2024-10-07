@@ -144,7 +144,7 @@ class Detector:
 
   
             else: # else, just keep updating eog stuff
-                time.sleep(0.5) # controlling timing and initialising variables //////////////
+                time.sleep(1) # controlling timing and initialising variables //////////////
                 self.timeoutCnt+=1
                 # creating initial dummy data dummy data array for rolling time window and filter size
                 if self.timeoutCnt % 4 == 1:
@@ -189,7 +189,7 @@ class Detector:
                 })
 
                 # Save the data to a file
-                with open(self.raw_data_path, "w") as f:
+                with open(self.raw_data_path, "a") as f:
                     json.dump(self.raw_data, f)
 
                 DataFilter.detrend(eog_left_data, DetrendOperations.LINEAR.value)
@@ -213,7 +213,7 @@ class Detector:
 def main():
     
     board = Detector("OPEN_BCI")
-    #board = Detector()
+    # board = Detector()
     #graph = GraphDrawer.Graph(board_shim=board)
     # graph = None
     board_thread = Thread(target=lambda: board.update())
