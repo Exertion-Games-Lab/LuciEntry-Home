@@ -14,6 +14,7 @@ from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperation
 #import GraphDrawer
 from threading import Thread
 import os
+import pygame
 
 
 class Parameter(object):
@@ -106,6 +107,11 @@ class Detector:
         self.fil_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_fil_slow_data.json")
         os.makedirs(self.data_folder, exist_ok=True)
 
+        pygame.mixer.init()
+        self.left_sound = pygame.mixer.Sound("Left.mp3")
+        self.right_sound = pygame.mixer.Sound("Right.mp3")
+        self.neutral_sound = pygame.mixer.Sound("Forward.mp3")
+
 
         self.timeoutCnt = 0
         self.TIMEOUT_THRESHOLD = 1901 # 1901*0.5 = 950.5 seconds = 15 minutes
@@ -153,6 +159,7 @@ class Detector:
                     _.-"/______________________/////
                     `'-.\~~~~~~~~~~~~~~~~~~~~~~\\\\\
                     """)
+                    self.left_sound.play()
                 elif self.timeoutCnt % 4 == 2:
                     label = "Neutral"
                     print("""
@@ -161,12 +168,14 @@ class Detector:
                      ^^^^^
                     ^^^^^^^      
                     """)
+                    self.neutral_sound.play()
                 elif self.timeoutCnt % 4 == 3:
                     label = "Right"
                     print("""
                     \\\\\______________________\`-._
                     /////~~~~~~~~~~~~~~~~~~~~~~/.-'`
                     """)
+                    self.right_sound.play()
                 else: 
                     label = "Neutral"
                     print("""
@@ -175,6 +184,7 @@ class Detector:
                      ^^^^^
                     ^^^^^^^      
                     """)
+                    self.neutral_sound.play()
                 time.sleep(0.5) # compensate for closed eyes test where someone tells you which way to look
                 time.sleep(1) # for open bci to catch up
                 eog_data = self.board.get_board_data(250)

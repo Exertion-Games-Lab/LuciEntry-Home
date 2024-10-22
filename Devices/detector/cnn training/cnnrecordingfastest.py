@@ -9,6 +9,7 @@ from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperation
 #import GraphDrawer
 from threading import Thread
 import os
+import pygame
 
 
 class Parameter(object):
@@ -100,6 +101,11 @@ class Detector:
         self.raw_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_raw_fast_data.json")
         self.fil_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_fil_fast_data.json")
         os.makedirs(self.data_folder, exist_ok=True)
+        
+        pygame.mixer.init()
+        self.left_sound = pygame.mixer.Sound("Left.mp3")
+        self.right_sound = pygame.mixer.Sound("Right.mp3")
+        self.neutral_sound = pygame.mixer.Sound("Forward.mp3")
 
 
         self.timeoutCnt = 0
@@ -151,11 +157,13 @@ class Detector:
                     _.-"/______________________/////
                     `'-.\~~~~~~~~~~~~~~~~~~~~~~\\\\\
                     """)
+                    self.left_sound.play()
                 elif label == "Right":
                     print("""
                     \\\\\______________________\`-._
                     /////~~~~~~~~~~~~~~~~~~~~~~/.-'`
                     """)
+                    self.right_sound.play()
                 else:  # Neutral
                     print("""
                        ^
@@ -163,8 +171,9 @@ class Detector:
                      ^^^^^
                     ^^^^^^^      
                     """)
-                time.sleep(0.5) # compensate for closed eyes test where someone tells you which way to look
-                time.sleep(1) # for open bci to catch up
+                    self.neutral_sound.play()
+                time.sleep(1) # compensate for closed eyes test where someone tells you which way to look
+                time.sleep(0.5) # for open bci to catch up
                 eog_data = self.board.get_board_data(250)
                 eog_left_data = eog_data[self.eog_channel_left]
                 eog_right_data = eog_data[self.eog_channel_right]
