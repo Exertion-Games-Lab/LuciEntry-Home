@@ -3,11 +3,6 @@ from datetime import date
 import time
 import json
 import numpy as np 
-# import pickle
-# import yasa
-# from mne import create_info
-# from mne.io import RawArray
-# from flask import Flask, jsonify, request
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes, AggOperations
 # our own graph drawer
@@ -87,9 +82,9 @@ class Detector:
             self.eog_channel = self.channels[2]
             #Rohit's EOG classifier
             self.eog_channel_left = self.channels[2] #left electrode Channel 3
-            print('eog channel number=', self.channels[2] )
+            print('eog left channel number=', self.channels[2] )
             self.eog_channel_right = self.channels [1] #right electrode Channel 2
-            print('eog channel number=', self.channels[1] )
+            print('eog right channel number=', self.channels[1] )
 
 
 
@@ -99,9 +94,9 @@ class Detector:
         self.num_channels = 3
         self.raw_data = []
         self.fil_data = []
-        self.person_name = 'Cosmos' #change this to your name !!!!!!!!!!!!!!!!!!!!!!!!!
+        self.person_name = input("Please enter your name and click enter to start: ") #change this to your name !!!!!!!!!!!!!!!!!!!!!!!!!
         self.current_file_path = os.path.dirname(os.path.abspath(__file__))
-        self.data_folder = os.path.join(self.current_file_path, "cnn eog data", self.person_name)
+        self.data_folder = os.path.join(self.current_file_path, "cnn_eog_data", self.person_name)
         self.raw_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_raw_fast_data.json")
         self.fil_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_fil_fast_data.json")
         os.makedirs(self.data_folder, exist_ok=True)
@@ -123,7 +118,7 @@ class Detector:
         print("reconnection finished")
         
 
-    def update(self):
+    def update(self): # used for collecting data for cyton board and labeling it
         while True:
             # while myArgs.isInterrupt==False:
             if self.timeoutCnt>=self.TIMEOUT_THRESHOLD: #the board lost connection or something, restart it
@@ -143,8 +138,8 @@ class Detector:
                 print("reconnection finished")
 
   
-            else: # else, just keep updating eog stuff
-                time.sleep(0.5) # controlling timing and initialising variables //////////////
+            else: # propts the user to look a certain way and collects data
+                # controlling timing and initialising variables //////////////
                 self.timeoutCnt+=1
                 # creating initial dummy data dummy data array for rolling time window and filter size
                 sequence = ["Neutral"] * 6 + ["Left", "Right"] * 5 + ["Neutral"] * 6
@@ -163,19 +158,18 @@ class Detector:
                     """)
                 else:  # Neutral
                     print("""
-                    ^
-                    ^^^
-                    ^^^^^
+                       ^
+                      ^^^
+                     ^^^^^
                     ^^^^^^^      
                     """)
-                # time.sleep(0.5) # compensate for closed eyes test where someone tells you which way to look
-                time.sleep(0.3) # for open bci to catch up
+                time.sleep(0.5) # compensate for closed eyes test where someone tells you which way to look
+                time.sleep(1) # for open bci to catch up
                 eog_data = self.board.get_board_data(250)
                 eog_left_data = eog_data[self.eog_channel_left]
                 eog_right_data = eog_data[self.eog_channel_right]
                 
                 self.raw_data.append({
-                    "name": self.person_name,
                     "label": label,
                     "eog_left": eog_left_data.tolist(),
                     "eog_right": eog_right_data.tolist()
@@ -191,7 +185,6 @@ class Detector:
                 DataFilter.perform_bandpass(eog_right_data, self.sampling_rate, 0.3, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
 
                 self.fil_data.append({
-                    "name": self.person_name,
                     "label": label,
                     "eog_left": eog_left_data.tolist(),
                     "eog_right": eog_right_data.tolist()  # Convert numpy array to list for JSON serialization
