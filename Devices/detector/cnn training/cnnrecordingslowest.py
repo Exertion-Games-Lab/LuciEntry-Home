@@ -185,7 +185,7 @@ class Detector:
                     ^^^^^^^      
                     """)
                     self.neutral_sound.play()
-                time.sleep(0.5) # compensate for closed eyes test where someone tells you which way to look
+                time.sleep(0.3) # compensate for closed eyes test where someone tells you which way to look
                 time.sleep(1) # for open bci to catch up
                 eog_data = self.board.get_board_data(250)
                 eog_left_data = eog_data[self.eog_channel_left]
