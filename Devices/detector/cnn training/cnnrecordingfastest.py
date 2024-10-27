@@ -103,9 +103,9 @@ class Detector:
         os.makedirs(self.data_folder, exist_ok=True)
         
         pygame.mixer.init()
-        self.left_sound = pygame.mixer.Sound("Left.mp3")
-        self.right_sound = pygame.mixer.Sound("Right.mp3")
-        self.neutral_sound = pygame.mixer.Sound("Forward.mp3")
+        self.left_sound = pygame.mixer.Sound((os.path.join(self.current_file_path,"Left.mp3")))
+        self.right_sound = pygame.mixer.Sound(os.path.join(self.current_file_path,"Right.mp3"))
+        self.neutral_sound = pygame.mixer.Sound(os.path.join(self.current_file_path,"Forward.mp3"))
 
 
         self.timeoutCnt = 0
@@ -176,32 +176,39 @@ class Detector:
                 time.sleep(0.5) # for open bci to catch up
                 eog_data = self.board.get_board_data(250)
                 eog_left_data = eog_data[self.eog_channel_left]
+                print('shape of data = ',eog_left_data.shape)
                 eog_right_data = eog_data[self.eog_channel_right]
                 
-                self.raw_data.append({
-                    "label": label,
-                    "eog_left": eog_left_data.tolist(),
-                    "eog_right": eog_right_data.tolist()
-                })
+                if self.timeoutCnt >= 20:
+                    print('recoded data')
+                    self.raw_data.append({
+                        "label": label,
+                        "eog_left": eog_left_data.tolist(),
+                        "eog_right": eog_right_data.tolist()
+                    })
 
-                # Save the data to a file
-                with open(self.raw_data_path, "w") as f:
-                    json.dump(self.raw_data, f)
+                    # Save the data to a file
+                    with open(self.raw_data_path, "w") as f:
+                        json.dump(self.raw_data, f)
 
                 DataFilter.detrend(eog_left_data, DetrendOperations.LINEAR.value)
                 DataFilter.detrend(eog_right_data, DetrendOperations.LINEAR.value)
                 DataFilter.perform_bandpass(eog_left_data, self.sampling_rate, 0.3, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
                 DataFilter.perform_bandpass(eog_right_data, self.sampling_rate, 0.3, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+                
+                print('max eog right:', max(eog_right_data))
+                print('max eog left:', max(eog_left_data)) 
+                
+                if self.timeoutCnt >= 20:
+                    self.fil_data.append({
+                        "label": label,
+                        "eog_left": eog_left_data.tolist(),
+                        "eog_right": eog_right_data.tolist()  # Convert numpy array to list for JSON serialization
+                    })
 
-                self.fil_data.append({
-                    "label": label,
-                    "eog_left": eog_left_data.tolist(),
-                    "eog_right": eog_right_data.tolist()  # Convert numpy array to list for JSON serialization
-                })
-
-                # Save the data to a file
-                with open(self.fil_data_path, "w") as f:
-                    json.dump(self.fil_data, f)
+                    # Save the data to a file
+                    with open(self.fil_data_path, "w") as f:
+                        json.dump(self.fil_data, f)
                 
 
          

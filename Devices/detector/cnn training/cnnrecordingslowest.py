@@ -108,9 +108,9 @@ class Detector:
         os.makedirs(self.data_folder, exist_ok=True)
 
         pygame.mixer.init()
-        self.left_sound = pygame.mixer.Sound("Left.mp3")
-        self.right_sound = pygame.mixer.Sound("Right.mp3")
-        self.neutral_sound = pygame.mixer.Sound("Forward.mp3")
+        self.left_sound = pygame.mixer.Sound((os.path.join(self.current_file_path,"Left.mp3")))
+        self.right_sound = pygame.mixer.Sound(os.path.join(self.current_file_path,"Right.mp3"))
+        self.neutral_sound = pygame.mixer.Sound(os.path.join(self.current_file_path,"Forward.mp3"))
 
 
         self.timeoutCnt = 0
@@ -185,34 +185,43 @@ class Detector:
                     ^^^^^^^      
                     """)
                     self.neutral_sound.play()
-                time.sleep(0.3) # compensate for closed eyes test where someone tells you which way to look
+                
+                time.sleep(0.6) # compensate for closed eyes test where someone tells you which way to look
                 time.sleep(1) # for open bci to catch up
                 eog_data = self.board.get_board_data(250)
                 eog_left_data = eog_data[self.eog_channel_left]
                 eog_right_data = eog_data[self.eog_channel_right]
-                
-                self.raw_data.append({
+                print("eog data shape :", eog_left_data.shape)
+                if self.timeoutCnt >= 20:
+                    print('recorded_data')
+                    self.raw_data.append({
 
-                    "label": label,
-                    "eog_left": eog_left_data.tolist(),
-                    "eog_right": eog_right_data.tolist()
-                })
+                        "label": label,
+                        "eog_left": eog_left_data.tolist(),
+                        "eog_right": eog_right_data.tolist()
+                    })
+                    print("raw data shape :", np.shape(self.raw_data))
+                    # Save the data to a file
+                    with open(self.raw_data_path, "a") as f:
+                        json.dump(self.raw_data, f)
 
-                # Save the data to a file
-                with open(self.raw_data_path, "a") as f:
-                    json.dump(self.raw_data, f)
-
-               
-                self.fil_data.append({
-                    "label": label,
-                    "eog_left": eog_left_data.tolist(),
-                    "eog_right": eog_right_data.tolist()  # Convert numpy array to list for JSON serialization
-                })
-
-                # Save the data to a file
-                with open(self.fil_data_path, "w") as f:
-                    json.dump(self.fil_data, f)
-                
+                DataFilter.detrend(eog_left_data, DetrendOperations.LINEAR.value)
+                DataFilter.detrend(eog_right_data, DetrendOperations.LINEAR.value)
+                DataFilter.perform_bandpass(eog_left_data, self.sampling_rate, 0.3, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+                DataFilter.perform_bandpass(eog_right_data, self.sampling_rate, 0.3, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
+                print('left channel max', np.max(eog_left_data))
+                print('right channel max', np.max(eog_right_data))
+                if self.timeoutCnt >= 20:
+                    self.fil_data.append({
+                        "label": label,
+                        "eog_left": eog_left_data.tolist(),
+                        "eog_right": eog_right_data.tolist()  # Convert numpy array to list for JSON serialization
+                    })
+                    print("filtered data shape :", np.shape(self.fil_data))
+                    # Save the data to a file
+                    with open(self.fil_data_path, "w") as f:
+                        json.dump(self.fil_data, f)
+                    
 
          
 def main():
