@@ -141,7 +141,7 @@ class Detector:
 
         # yasa counter
         self.sleep_stage_array = np.ndarray(0)
-        self.stager_info = create_info(ch_names=["EEG"],sfreq = self.sampling_rate, ch_types = ["eeg"])
+        self.stager_info = create_info(ch_names=["EEG"], sfreq = self.sampling_rate, ch_types = ["eeg"])
         self.started_staging = 0
         self.yasa_filename = date.today().strftime("%d_%m_%Y") + '_EEG-log'
         
@@ -217,12 +217,14 @@ class Detector:
                 if len(self.sleep_stage_array) > 99000: #(storage arrays need to be wiped each five mins)
 
                     raw = RawArray((self.sleep_stage_array.reshape(1,-1)), self.stager_info) #might need to reshape .reshape(1,-1)
-                    
-                    sls = yasa.SleepStaging(raw , eeg_name='EEG')
+                    test = yasa.SleepStaging(raw , eeg_name='EEG').predict()
                     print('1')
+                    print("test:",test)
+                    sls = yasa.SleepStaging(raw , eeg_name='EEG')
+                    print('2')
                     print("sls:",sls)
                     Yasa_hour_stages = sls.predict()
-                    print('2')
+                    print('3')
                     print("yasa stage:",Yasa_hour_stages)
                     # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
                     last_hour = len(Yasa_hour_stages) -1
@@ -237,7 +239,7 @@ class Detector:
 
                 
             else: # else, just keep updating eog stuff
-                time.sleep(0.2) # controlling timing and initialising variables //////////////
+                time.sleep(1) # controlling timing and initialising variables //////////////
                 self.timeoutCnt+=1
                 # creating initial dummy data dummy data array for rolling time window and filter size
                 # if len(self.eog_data_right) < 2700 :
