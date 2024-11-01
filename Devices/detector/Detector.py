@@ -5,8 +5,10 @@ import numpy as np
 import pickle
 import time
 import yasa
+import mne
 from mne import create_info
 from mne.io import RawArray
+import flask
 from flask import Flask, jsonify, request
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes, AggOperations
@@ -16,6 +18,7 @@ from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperation
 from threading import Thread
 
 import os
+import warnings
 
 
 class Parameter(object):
@@ -140,8 +143,10 @@ class Detector:
         
 
         # yasa counter
-        self.sleep_stage_array = np.ndarray(0)
-        self.stager_info = create_info(ch_names=["EEG"], sfreq = self.sampling_rate, ch_types = ["eeg"])
+        # self.sleep_stage_array_eeg = np.ndarray(0)
+        # self.sleep_stage_array_eog = np.ndarray(0)
+        self.sleep_stage_array = np.ndarray((2, 0))
+        self.stager_info = create_info(ch_names=["EEG","EOG"], sfreq = self.sampling_rate, ch_types = ["eeg","eog"])
         self.started_staging = 0
         self.yasa_filename = date.today().strftime("%d_%m_%Y") + '_EEG-log'
         
@@ -151,7 +156,7 @@ class Detector:
 
         #reconnected counter
         self.timeoutCnt = 0
-        self.TIMEOUT_THRESHOLD = 1901
+        self.TIMEOUT_THRESHOLD = 600
 
         #calculate REM every TIME_WINDOW
         self.TIME_WINDOW = 450
@@ -194,38 +199,51 @@ class Detector:
                 # board.start_stream()
 
 
-            if self.board.get_board_data_count() > 8999: #if there is enough samples to calculate sleep stage (3000 samples needed), classify sleep
+            if self.board.get_board_data_count() > 4500: #if there is enough samples to calculate sleep stage (3000 samples needed), classify sleep
 
                 # pull new data from the buffer
                 self.eeg_data = self.board.get_board_data()
 
                 DataFilter.detrend(self.eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
-                # DataFilter.detrend(self.eeg_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
+                DataFilter.detrend(self.eeg_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
+                
                 if self.started_staging == 1:
-                    self.sleep_stage_array = np.concatenate((self.sleep_stage_array, self.eeg_data[self.eeg_channel]))
-                    # self.sleep_stage_array[1] = np.concatenate((self.sleep_stage_array[1], self.eeg_data[self.eog_channel_right]))
-                    print("sleep stage extended:",np.shape(self.sleep_stage_array))
+                    new_data = np.vstack(((self.eeg_data[self.eeg_channel]).reshape(1,-1), (self.eeg_data[self.eog_channel_right]).reshape(1,-1)))
+
+                    # self.sleep_stage_array_eeg = np.concatenate((self.sleep_stage_array_eeg, (self.eeg_data[self.eeg_channel]).reshape(1,-1)), axis=1)
+                    # print("sleep stage extended:",np.shape(self.sleep_stage_array_eeg))
+                    # print('first eeg value:', self.sleep_stage_array_eeg[0][0])
+                    # self.sleep_stage_array_eog = np.concatenate((self.sleep_stage_array_eog, (self.eeg_data[self.eog_channel]).reshape(1,-1)), axis=1)
+                    # print("sleep stage extended:",np.shape(self.sleep_stage_array_eeg))
+                    self.sleep_stage_array = np.concatenate((self.sleep_stage_array, new_data), axis=1)
+                    print("sleep stage extended:", np.shape(self.sleep_stage_array))
                 else:
 
-                    self.sleep_stage_array = self.eeg_data[self.eeg_channel]
-                    # self.sleep_stage_array[1] = self.eeg_data[self.eog_channel_right]
+                    # self.sleep_stage_array_eeg = (self.eeg_data[self.eeg_channel]).reshape(1,-1)
+                    # self.sleep_stage_array_eog = (self.eeg_data[self.eog_channel_right]).reshape(1,-1)
+                    self.sleep_stage_array = np.vstack(((self.eeg_data[self.eeg_channel]).reshape(1,-1), (self.eeg_data[self.eog_channel_right]).reshape(1,-1)))
+                    print("sleep stage array:",np.shape(self.sleep_stage_array))
+                    print('first eeg value:', self.sleep_stage_array[0][0])
                     # print('eeg length', len(self.sleep_stage_array[0]))
                     # print('eog length', len(self.sleep_stage_array[1]))
                 
-                    print('yasa_array_test:',len(self.sleep_stage_array))
+                    # print('yasa_array_test:', self.sleep_stage_array.shape)
                     self.started_staging = 1
-                if len(self.sleep_stage_array) > 99000: #(storage arrays need to be wiped each five mins)
+                if self.sleep_stage_array.shape[1] > 9000: #(storage arrays need to be wiped each five mins)
+                    warnings.filterwarnings("ignore", message=".*pick_channels()*is a legacy function.*")
+                    #only wporks with python 3.9.6 for some reason
+                    print('passed')
+                    raw = RawArray(self.sleep_stage_array, self.stager_info) #might need to reshape .reshape(1,-1)
+                    print("raw shape:", raw)
+                    print("raw data:", raw.info)
+                    sleep_staging = yasa.SleepStaging(raw, eeg_name='EEG', eog_name='EOG')
+                    print("sleep staging:", sleep_staging)
+                    Yasa_hour_stages = sleep_staging.predict()
 
-                    raw = RawArray((self.sleep_stage_array.reshape(1,-1)), self.stager_info) #might need to reshape .reshape(1,-1)
-                    test = yasa.SleepStaging(raw , eeg_name='EEG').predict()
-                    print('1')
-                    print("test:",test)
-                    sls = yasa.SleepStaging(raw , eeg_name='EEG')
-                    print('2')
-                    print("sls:",sls)
-                    Yasa_hour_stages = sls.predict()
-                    print('3')
-                    print("yasa stage:",Yasa_hour_stages)
+                    print("Yasa stages:", Yasa_hour_stages)
+
+
+
                     # at a count of 90000 samples sleep stager prints yasa stage: ['W' 'W' 'W' 'W' 'W' 'W' 'W' 'W' 'N1' 'N1' 'N1' 'N1']
                     last_hour = len(Yasa_hour_stages) -1
                     # print("last sleep stage:", Yasa_stages[last])
@@ -237,9 +255,9 @@ class Detector:
                     if Yasa_hour_stages[last_hour] == 'R':
                         self.sleep_stage = "REM"
 
-                
+      
             else: # else, just keep updating eog stuff
-                time.sleep(1) # controlling timing and initialising variables //////////////
+                time.sleep(0.5) # controlling timing and initialising variables //////////////
                 self.timeoutCnt+=1
                 # creating initial dummy data dummy data array for rolling time window and filter size
                 # if len(self.eog_data_right) < 2700 :
@@ -411,9 +429,14 @@ def get_rem():
 # EEG_data_queue = GraphDrawer.EEGDataQueue(3)
 
 def main():
-    
-    flask_thread = Thread(target=lambda: app.run(host='0.0.0.0',port = '5050', debug=True, use_reloader=False))
-    flask_thread.start()
+    print("argparse version", argparse.__version__)
+    print("numpy version", np.__version__)
+    print("yasa version", yasa.__version__)
+    print("pickle version", pickle.format_version)
+    print("mne version", mne.__version__)
+    print("flask version", flask.__version__)
+    # flask_thread = Thread(target=lambda: app.run(host='0.0.0.0',port = '5050', debug=True, use_reloader=False))
+    # flask_thread.start()
     board = Detector("OPEN_BCI")
     #board = Detector()
     #graph = GraphDrawer.Graph(board_shim=board)

@@ -6,12 +6,13 @@ from collections import Counter
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Embedding, LSTM, Conv1D, MaxPooling1D, Flatten, Dense, Dropout
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential 
+from tensorflow.keras.layers import Dense, Embedding, LSTM, Conv1D, MaxPooling1D, Flatten, Dense, Dropout , Input 
+from tensorflow.keras.preprocessing.sequence import pad_sequences 
+from tensorflow.keras.utils import to_categorical 
+from tensorflow.keras.callbacks import EarlyStopping
 
-def load_data(data_dir):
+def load_data(data_dir): #this loads the data and combines the eog left and eog right into a single 500 unit length string that is used for training"
     data = []
     labels = []
     max_length = 0
@@ -43,7 +44,7 @@ current_working_directory = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(current_working_directory, "cnn_eog_data", "data")
 data, labels, max_length = load_data(data_dir)
 print(data[0])
-# Encode labels
+# Encode labels #attactches the labesl to the data
 label_encoder = LabelEncoder()
 labels = label_encoder.fit_transform(labels)
 
@@ -51,24 +52,20 @@ label_counts = Counter(labels)
 for label, count in label_counts.items():
     print(f'There are {count} data packets with the label "{label_encoder.inverse_transform([label])[0]}"')
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, random_state=42)
+labels = to_categorical(labels)
 
-# Tokenize and pad sequences
-X_train = np.expand_dims(X_train, axis=-1)
-X_test = np.expand_dims(X_test, axis=-1)
-y_train = to_categorical(y_train, num_classes=3)
-y_test = to_categorical(y_test, num_classes=3)
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.4, random_state=42)
 
-print('x train shape:', X_train.shape)
-print('x test shape:', X_test.shape)
+# Print shapes for debugging
 print('y train shape:', y_train.shape)
-print('y test shape:', y_test.shape)
+print('X train shape:', X_train.shape)
 
 
-# Build the model
+# Build model
 model = Sequential()
-model.add(Conv1D(filters=64, kernel_size=3, activation='relu', input_shape=(max_length, 1)))
+model.add(Input(shape=(X_train.shape[1], 1)))
+model.add(Conv1D(filters=64, kernel_size=3, activation='relu'))
 model.add(MaxPooling1D(pool_size=2))
 model.add(Conv1D(filters=64, kernel_size=3, activation='relu'))
 model.add(MaxPooling1D(pool_size=2))
@@ -78,13 +75,16 @@ model.add(Dropout(0.5))
 model.add(Dense(3, activation='softmax'))  # Assuming 3 classes
 
 
+# Compile model
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Train the model
-history = model.fit(X_train, y_train, epochs=10, validation_data=(X_test, y_test), batch_size=64)
+# Early stopping
+early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
-# Print shapes of the datasets
-print(f"X_train shape: {X_train.shape}")
-print(f"X_test shape: {X_test.shape}")
-print(f"y_train shape: {y_train.shape}")
+# Train model
+model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), callbacks=[early_stopping])
+
+# Evaluate model
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f"Test Accuracy: {accuracy * 100:.2f}%")
 print(f"y_test shape: {y_test.shape}")

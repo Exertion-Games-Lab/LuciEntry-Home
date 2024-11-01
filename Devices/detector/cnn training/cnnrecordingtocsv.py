@@ -15,6 +15,7 @@ from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperation
 from threading import Thread
 import os
 import pygame
+import csv
 
 
 class Parameter(object):
@@ -103,9 +104,10 @@ class Detector:
         self.person_name = input("Please enter your name and click enter to start: ") #change this to your name !!!!!!!!!!!!!!!!!!!!!!!!!
         self.current_file_path = os.path.dirname(os.path.abspath(__file__))
         self.data_folder = os.path.join(self.current_file_path, "cnn_eog_data", self.person_name)
-        self.raw_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_raw_slow_data.json")
-        self.fil_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_fil_slow_data.json")
+        self.raw_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_raw_slow_data.csv")
+        self.fil_data_path = os.path.join(self.data_folder, f"{self.person_name}_eog_fil_slow_data.csv")
         os.makedirs(self.data_folder, exist_ok=True)
+        self.header = ["label", "eog_left", "eog_right"]
 
         pygame.mixer.init()
         self.left_sound = pygame.mixer.Sound((os.path.join(self.current_file_path,"Left.mp3")))
@@ -127,7 +129,7 @@ class Detector:
                         print("reconnection failed. Try again...")
                         time.sleep(1) ## wait for a bit 
         print("reconnection finished")
-        
+     
 
     def update(self):
         while True:
@@ -192,18 +194,19 @@ class Detector:
                 eog_left_data = eog_data[self.eog_channel_left]
                 eog_right_data = eog_data[self.eog_channel_right]
                 print("eog data shape :", eog_left_data.shape)
-                if self.timeoutCnt >= 20:
-                    print('recorded_data')
-                    self.raw_data.append({
-
-                        "label": label,
-                        "eog_left": eog_left_data.tolist(),
-                        "eog_right": eog_right_data.tolist()
-                    })
-                    print("raw data shape :", np.shape(self.raw_data))
-                    # Save the data to a file
-                    with open(self.raw_data_path, "a") as f:
-                        json.dump(self.raw_data, f)
+                
+                
+                if self.timeoutCnt >= 5: #write raw data to csv after timcount seconds
+                    print('recorded_raw_data')
+                    raw_data = [label, eog_left_data.tolist(), eog_right_data.tolist()]
+                    # print("raw data shape :", (raw_data))
+                    # Save the data to a CSV file
+                    raw_file_exists = os.path.isfile(self.raw_data_path)
+                    with open(self.raw_data_path, mode='a', newline='') as file:
+                        writer = csv.writer(file)
+                        if not raw_file_exists:
+                            writer.writerow(self.raw_data_path)  # Write the header only if the file is new
+                        writer.writerow(raw_data) 
 
                 DataFilter.detrend(eog_left_data, DetrendOperations.LINEAR.value)
                 DataFilter.detrend(eog_right_data, DetrendOperations.LINEAR.value)
@@ -211,16 +214,16 @@ class Detector:
                 DataFilter.perform_bandpass(eog_right_data, self.sampling_rate, 0.3, 6, 4, FilterTypes.BUTTERWORTH.value, 0)
                 print('left channel max', np.max(eog_left_data))
                 print('right channel max', np.max(eog_right_data))
-                if self.timeoutCnt >= 20:
-                    self.fil_data.append({
-                        "label": label,
-                        "eog_left": eog_left_data.tolist(),
-                        "eog_right": eog_right_data.tolist()  # Convert numpy array to list for JSON serialization
-                    })
-                    print("filtered data shape :", np.shape(self.fil_data))
-                    # Save the data to a file
-                    with open(self.fil_data_path, "w") as f:
-                        json.dump(self.fil_data, f)
+                if self.timeoutCnt >= 5:
+                    fil_data = [label, eog_left_data.tolist(), eog_right_data.tolist()]
+                    # print("fil data shape :", (fil_data))
+                    # Save the data to a CSV file
+                    fil_file_exists = os.path.isfile(self.fil_data_path)
+                    with open(self.fil_data_path, mode='a', newline='') as file:
+                        writer = csv.writer(file)
+                        if not fil_file_exists:
+                            writer.writerow(self.fil_data_path)  # Write the header only if the file is new
+                        writer.writerow(fil_data) 
                     
 
          

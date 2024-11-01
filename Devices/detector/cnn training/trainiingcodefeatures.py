@@ -11,7 +11,7 @@ from collections import Counter
 from scipy.stats import skew, kurtosis
 from scipy.signal import welch
 
-def extract_features(data_packet):
+def extract_features(data_packet): 
     features = []
     
     # Split the data packet into left and right EOG signals
@@ -54,7 +54,7 @@ def extract_features(data_packet):
     
     return features
 
-def load_data(data_dir):
+def load_data(data_dir): # replace with code that loads the larger raw json files into in chunks
     data = []
     labels = []
     json_files = [f for f in os.listdir(data_dir) if f.endswith('.json')]
