@@ -1,3 +1,7 @@
+import os
+# our own graph drawer
+#import GraphDrawer
+from threading import Thread
 import argparse
 from datetime import date
 import time
@@ -10,13 +14,7 @@ from mne.io import RawArray
 from flask import Flask, jsonify, request
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes, AggOperations
-
-# our own graph drawer
-#import GraphDrawer
-from threading import Thread
-
-import os
-
+from Devices.detector.OpenBCIFormatter import OpenBCIFormatter
 
 class Parameter(object):
     pass
@@ -147,6 +145,7 @@ class Detector:
         # participant and save file data
         participant_name = "Cosmos"
         self.sleep_data_file_name = date.today().strftime("%d_%m_%Y") + '_' + participant_name + '_log.txt'
+        # create file name here
 
         #reconnected counter
         self.timeoutCnt = 0
@@ -197,6 +196,7 @@ class Detector:
 
                 # pull new data from the buffer
                 self.eeg_data = self.board.get_board_data()
+                # TODO: Store this in some variable
                 DataFilter.detrend(self.eeg_data[self.eeg_channel], DetrendOperations.LINEAR.value)
                 # DataFilter.detrend(self.eeg_data[self.eog_channel_right], DetrendOperations.LINEAR.value)
                 if self.started_staging == 1:
@@ -315,7 +315,6 @@ class Detector:
                     limit = len(self.eog_data_right)- 2750
                     self.eog_data_left = self.eog_data_left[:-limit]
                     self.eog_data_right = self.eog_data_right[:-limit]
- 
 
                 #IF statements searching for LR signal
                 self.T_count +=1
@@ -340,10 +339,6 @@ class Detector:
                 if self.T_count == 100: # period of eogclasses we would like to store
                     self.LR_count = 0
                     self.T_count = 0
-
-                
-                
-                
                 
             #calculate REM within TIME_PERIOD to make sure user is really in the REM stage
             #nathan's model
@@ -361,7 +356,6 @@ class Detector:
             else:
                 self.sleep_stage_with_period = "Not_REM_PERIOD"
 
-
             # self.commandParameters.sleep_stage = self.sleep_stage_with_period
             # self.commandParameters.eog_class = eog_class
             t = time.asctime()
@@ -377,13 +371,18 @@ class Detector:
             rem_state = {'state': self.sleep_stage_with_period}  
             #rem_state = {'state': self.sleep_stage_with_period} 
             # else:
-            #     message += "EOG Class: " + str(eog_class) +'\n'   
+            #     message += "EOG Class: " + str(eog_class) +'\n'
+
+            # Save as a txt file
             f = open(self.sleep_data_file_name, "a")
             f.write(message)
             f.close()
-            print(message)  
+            print(message)
 
-
+            # Call the OpenBCI formatter class
+            formatter = OpenBCIFormatter(self.sleep_data_file_name, self.eog_data_left, self.eog_data_right)
+            formatted_message = formatter.format_message()
+            print(formatted_message)
 
 # Flask app setup
 app = Flask(__name__)
