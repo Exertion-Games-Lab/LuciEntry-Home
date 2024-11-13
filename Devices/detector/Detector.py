@@ -14,7 +14,7 @@ from mne.io import RawArray
 from flask import Flask, jsonify, request
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 from brainflow.data_filter import DataFilter, WindowOperations, DetrendOperations, FilterTypes, AggOperations
-from Devices.detector.OpenBCIFormatter import OpenBCIFormatter
+from openbci_formatter import OpenBCIFormatter  # Import the OpenBCIFormatter class
 
 class Parameter(object):
     pass
@@ -146,6 +146,7 @@ class Detector:
         participant_name = "Cosmos"
         self.sleep_data_file_name = date.today().strftime("%d_%m_%Y") + '_' + participant_name + '_log.txt'
         # create file name here
+        self.formatter = OpenBCIFormatter(self.sleep_data_file_name)
 
         #reconnected counter
         self.timeoutCnt = 0
@@ -380,8 +381,7 @@ class Detector:
             print(message)
 
             # Call the OpenBCI formatter class
-            formatter = OpenBCIFormatter(self.sleep_data_file_name, self.eog_data_left, self.eog_data_right)
-            formatted_message = formatter.format_message()
+            formatted_message = self.formatter.format_message(self.eog_data_left, self.eog_data_right)
             print(formatted_message)
 
 # Flask app setup
@@ -404,8 +404,8 @@ def main():
     
     flask_thread = Thread(target=lambda: app.run(host='0.0.0.0',port = '5050', debug=True, use_reloader=False))
     flask_thread.start()
-    board = Detector("OPEN_BCI")
-    #board = Detector()
+    # board = Detector("OPEN_BCI")
+    board = Detector()
     #graph = GraphDrawer.Graph(board_shim=board)
     graph = None
     board_thread = Thread(target=lambda: board.update(graph))
