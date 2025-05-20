@@ -47,9 +47,16 @@ Replace `/path/to/brainflow/installed/lib` with the actual path to the `lib` dir
 
 By following these steps, you should be able to use BrainFlow as a site-package in your Python environment on the Raspberry Pi, just like any other Python package installed via pip.
 
+
+###What does the detector do?
+The detector.py script uses the BrainFlow module and YASA [6] to detect the user's sleep stages and eye movements. It supports various sleep trackers, such as Muse S and OpenBCI. Please specify the sleep tracker as a parameter when running the script.
+
+Once the detector reads brain and eye signals, it analyzes the data and outputs both the current sleep stage and whether the user has performed an LR signal (four consecutive left-to-right eye movements). This output is sent to the smartphone application: https://github.com/Exertion-Games-Lab/LucidReality-UI.
+
 Citations:
 [1] https://brainflow-openbci.readthedocs.io/en/latest/BuildBrainFlow.html
 [2] https://brainflow.readthedocs.io/en/stable/BuildBrainFlow.html
 [3] https://openbci.com/forum/index.php?p=%2Fdiscussion%2F2627%2Fusing-cyton-daisy-with-brainflow-on-raspberry-pi-4
 [4] https://brainflow.org/get_started/
 [5] https://mne.discourse.group/t/pip-install-in-conda-environment-brainflow/7088
+[6] https://github.com/raphaelvallat/yasa
