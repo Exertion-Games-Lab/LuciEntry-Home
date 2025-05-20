@@ -212,35 +212,6 @@ This command will return you to your original shell session.
 sudo apt-get install lxterminal
 ```
 
-## Cloning Server Codes
-To clone the server codes from the Git repository, a public SSH key needs to be generated and added to the xgl.monash@gmail.com Github account.
-To do this:
-1. open a terminal in the Pi and enter
-```bash
-ssh-keygen -t rsa -C xgl.monash@gmail.com
-```
-Accept the default values by pressing enter when prompted, and the SSH key should be generated. 
-
-2. Navigate to the .ssh folder in the user folder of the Pi. In there, would be the SSH key which typically begins with "ssh-rsa". Copy the key and add it to the Github account. This is done by navigating on Github to Settings > SSH and GPG keys > New SSH key. Add the new SSH key and give it a title before saving it by pressing "Add SSH key".
-
-Once the SSH key is added, you can now clone the server codes onto the Pi. Navigate to the location you wish to store the Server code folder and open the terminal of that path(as standard practice, the lab usually sets the path to /home/"user"), where user is the username of the Pi. In this terminal, enter 
-```bash
-git clone git@github.com:Exertion-Games-Lab/LuciEntry.git
-```
-
-The codes should now be cloned into your Pi. Lastly, open the terminal with the path to "LuciEntry" and enter
-```bash
-chmod +x start.sh
-```
-This gives the shell file execute permissions.
-
-You might also want to open a terminal at the Server directory of the LuciEntry folder and run:
-```bash
-npm install
-```
-to install all the necessary dependencies that you may have missed.
-
-Once that is done, the project codes are ready to be used.
 
 ## Installing Arduino IDE and relevant libraries
 Install the Arduino IDE in the Pi from 
